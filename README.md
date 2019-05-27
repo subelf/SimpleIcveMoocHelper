@@ -16,7 +16,10 @@
 本插件使用说明: 油猴安装完成后找到 **添加新脚本** 选项后,将[本脚本](https://github.com/tuChanged/SimpleIcveMoocHelper/blob/master/src/src.js)全选复制进编辑框,按快捷键Ctrl+S即可食用
 
 注意:本脚本需在点击具体小节后才会运行,运行前有10秒等待时间,运行流程可按F12查看
-     作者浏览器: Chrome 
+     
+-----
+
+作者浏览器: Chrome  [网课页面](https://mooc.icve.com.cn/profile.html)
 
 ----
 
