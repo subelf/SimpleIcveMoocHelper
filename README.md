@@ -1,6 +1,6 @@
 # SimpleIcveMoocHelper
 
-## 一个简单基于油猴+jquery 开发实现智慧职教网课助手
+## 一个简单基于油猴+jquery 开发实现的智慧职教网课助手
 
 * 支持自动评论
 
@@ -9,6 +9,11 @@
 * 自动在讨论区抓取有效讨论内容,参与讨论
 
 * ........
+
+----
+油猴插件简单说明: 在浏览器插件中心(扩展中心啥啥的)搜索关键字 **tampermonkey** 等待安装完成
+
+本插件使用说明: 油猴安装完成后找到 **添加新脚本** 选项后,将[本脚本](https://github.com/tuChanged/SimpleIcveMoocHelper/blob/master/src/src.js)全选复制进编辑框,按快捷键Ctrl+S即可食用
 
 ----
 
