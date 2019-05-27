@@ -19,11 +19,11 @@
      
 -----
 
-作者浏览器: Chrome  [网课页面](https://mooc.icve.com.cn/profile.html)
+测试浏览器: Chrome  [网课页面](https://mooc.icve.com.cn/profile.html)
 
 ----
 
-作者大一弱鸡JS学习练手所写, ES5,6 瞎混搭,勿喷
+大一菜鸡 学习JS 练手所写, ES5,6 瞎混搭,勿喷
 
 ver.1.0 完成时间 : 2019.5.25
 
