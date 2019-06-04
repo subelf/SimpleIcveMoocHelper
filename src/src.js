@@ -22,7 +22,7 @@
     }, _self = unsafeWindow,
         url = location.pathname,
         top = _self
-		
+
     try {
         while (top != _self.top) top = top.parent.document ? top.parent : _self.top;
     } catch (err) {
@@ -30,8 +30,8 @@
         top = _self;
     }
     var $ = _self.jQuery || top.jQuery;
-    
-	//产生区间随机
+
+    //产生区间随机
     var rnd = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
     /**
      * 随机延迟执行方法
@@ -70,6 +70,7 @@
             current = $("li.np-section-level.np-section-level-3.active");
             switch (current.data().categoryname) {
                 case "pt":
+                case "文档":
                     pptHandler(current);
                     break;
                 case "视频":
@@ -126,6 +127,7 @@
                 break;
             case "pt":
             case "视频":
+            case "文档":
                 gotoUrl(current.next());
                 _main();
                 break;
@@ -167,9 +169,9 @@
         //延迟提交评论
         delayExec(commentHandler(current));
     }
-	 /**
-     * 提交评论
-     */
+    /**
+    * 提交评论
+    */
     function commentHandler(current) {
         //评5星
         $("#star #starImg4").click();
@@ -199,14 +201,14 @@
             //提交
             delayExec(() => {
                 $(".btn_replyTopic").click();
-                console.log("讨论成功\n"); 
+                console.log("讨论成功\n");
             }
             );
         }, 10000);
         /*  //返回上一页
          delayExec(() => window.history.go(-1)); */
     }
-   
+
     /**
      * 简单地找出一个有效的讨论
      */
