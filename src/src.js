@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         智慧职教网课助手
-// @version      1.05
+// @version      1.06
 // @description  智慧职教简易自动刷课脚本
 // @author        tuChanged
 // @run-at       document-end
@@ -51,6 +51,10 @@
             break;
         case "/study/discussionArea/topicReply.html":
             discussHandler();
+            break;
+        case "/study/workExam/testWork/preview.html":
+        case "/study/workExam/onlineExam/preview.html":
+            homeworkHandler();
             break;
         default:
             console.log(`脚本已准备启动 当前位置:${url}`);
@@ -137,9 +141,17 @@
      * 作业处理
      */
     function homeworkHandler() {
-
+        uncageCopyLimit()
     }
-
+    /*
+     *  解除文本限制   
+     */
+    function uncageCopyLimit() {
+        let arr = ["oncontextmenu", "ondragstart", "onselectstart", "onselect", "oncopy", "onbeforecopy"]
+        for (let i of arr)
+            $(".hasNoLeft").attr(i, "return true")
+        console.log("已成功解除限制")
+    }
     /**
      * 视频类处理
      */
