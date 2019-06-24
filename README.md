@@ -10,6 +10,8 @@
 
 - 自动解除作业复制限制 (1.06 added)
 
+- 提供窗口用于提取题库 (1.07 added)
+
 - 暂不支持答题功能
 
 - ........
@@ -18,7 +20,7 @@
 
 油猴插件简单说明: 在浏览器插件中心(扩展中心啥啥的)搜索关键字 **tampermonkey** 等待安装完成
 
-本插件使用说明: 油猴安装完成后找到 **添加新脚本** 选项后,将[本脚本](https://github.com/tuChanged/SimpleIcveMoocHelper/blob/master/src/src.js)全选复制进编辑框,按快捷键 Ctrl+S 即可食用
+本插件使用说明: 油猴安装完成后找到 **添加新脚本** 选项后,将[本脚本](/SimpleIcveMoocHelper/blob/master/src/src.js)全选复制进编辑框,按快捷键 Ctrl+S 即可食用
 
 注意:本脚本需在点击具体小节后才会运行,运行前有 10 秒等待时间,运行流程可按 F12 查看
 

@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         智慧职教网课助手
-// @version      1.06
+// @version      1.07
 // @description  智慧职教简易自动刷课脚本
 // @author        tuChanged
 // @run-at       document-end
@@ -55,6 +55,11 @@
         case "/study/workExam/testWork/preview.html":
         case "/study/workExam/onlineExam/preview.html":
             homeworkHandler();
+            break;
+        case "/study/workExam/homeWork/history.html":
+        case "/study/workExam/onlineExam/history.html":
+        case "/study/workExam/testWork/history.html":
+            floatHandler();
             break;
         default:
             console.log(`脚本已准备启动 当前位置:${url}`);
@@ -181,6 +186,33 @@
         //延迟提交评论
         delayExec(commentHandler(current));
     }
+    /**
+     * 提取当前页内容
+     */
+    function exactProblem() {
+        const arr = $(".e-q-body");
+        let text = "";
+
+        for (let x = 0; x < arr.length; x++)
+            text += arr[x].innerText;
+        $("#_content").val(text);
+
+    }
+    /**
+     * 提取题目
+     */
+    function floatHandler() {
+        const div = `<div style="border:#42b983 solid 2px;width: 330px; position: fixed; top: 0; right: 10px;  z-index: 99999">
+                        <button id="extract_btn">提取</button>
+                        <hr/>
+                        <textarea id="_content" style="width: 100%;height: 300px;border: #B3C0D1 solid 2px;overflow: auto;font-size: x-small" />
+                    </div>`;
+        $(div).appendTo('body')
+        $("#extract_btn").bind('click', () => exactProblem())
+    }
+
+
+
     /**
     * 提交评论
     */
