@@ -69,7 +69,7 @@
     //当前页
     let current;
 
-    //主要逻辑
+    //刷课主逻辑
     function _main() {
         //请求数据
         $("#olTempleteCellModul").click();
