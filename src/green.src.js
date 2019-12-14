@@ -139,7 +139,7 @@
     }
 
     /**
-     * 递归遍历目录树 具体如何处理在_main函数
+     * 递归遍历目录树
      */
     async function check(current) {
         //多级跳转
@@ -164,11 +164,11 @@
             }
             return;
         }
-        //查询下一个是否已完成
-        if (current.next().find("span.np-section-type.active").length > 0) {
-            check(current.next());
-            return;
-        }
+        // //查询下一个是否已完成
+        // if (current.next().find("span.np-section-type.active").length > 0) {
+        //     check(current.next());
+        //     return;
+        // }
         //查询下一项所属类别
         switch (current.next().children(".np-section-type").text().trim()) {
             // case ""://目录
