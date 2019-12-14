@@ -1,20 +1,23 @@
 // ==UserScript==
-// @name         智慧职教网课助手
-// @version      1.07
+// @name         智慧职教网课助手 绿版
+// @version      2.0
 // @description  智慧职教简易自动刷课脚本
 // @author        tuChanged
 // @run-at       document-end
 // @grant        unsafeWindow
-// @match       *://mooc.icve.com.cn/study/*
+// @match       *://zjy2.icve.com.cn/common/*
 // ==/UserScript==
 (function () {
     'use strict';
     const setting = {
-        randomComment: ["6666", "好", "讲解得很精辟"],
-        //最高延迟
-        maxDelayTime: 5000,
-        //最低3秒
-        minDelayTime: 3000,
+        // 随机评论
+        randomComment: ["666666", "好!", ".....", "挺不错的", "豁然开朗"],
+        //最高延时
+        maxDelayTime: 7000,
+        //最低延时
+        minDelayTime: 4000,
+        //ppt下一页点击次数
+        pptNextClick: 20,
         //0-高清 1-清晰 2-流畅 3-原画
         videoQuality: 2,
         //2倍速
@@ -22,7 +25,7 @@
     }, _self = unsafeWindow,
         url = location.pathname,
         top = _self
-
+    //获取jquery
     try {
         while (top != _self.top) top = top.parent.document ? top.parent : _self.top;
     } catch (err) {
@@ -32,68 +35,113 @@
     var $ = _self.jQuery || top.jQuery;
 
     //产生区间随机
-    var rnd = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
+    const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
+
     /**
-     * 随机延迟执行方法
-     * @param {需委托执行的函数} func 函数
+     * 使用异步实现
+     * 
+     *  随机延迟执行方法
+     * @param {需委托执行的函数} func 
      */
-    var delayExec = (func) => setTimeout(func, rnd(setting.minDelayTime, setting.maxDelayTime));
+    function delayExec(func) {
+        return new Promise((resolve, reject) => {
+            setTimeout(async () => {
+                console.log(func);
+                await func()
+                resolve();
+            }, rnd(setting.minDelayTime, setting.maxDelayTime));
+        })
+    }
+
     //跳转到某小节 通过顶栏
-    var gotoUrl = (page) => page.contents()[3].click();
+    const gotoUrl = (page) => page.click();
+    //打开菜单
+    const openMenu = () => $(".sildeDirectory").click();
     //跳转下一页
     // var nextCourse = () => $(".next").click();
 
-
-    //入口
-    switch (url) {
-        case "/study/courseLearn/resourcesStudy.html":
-            _main();
-            break;
-        case "/study/discussionArea/topicReply.html":
-            discussHandler();
-            break;
-        case "/study/workExam/testWork/preview.html":
-        case "/study/workExam/onlineExam/preview.html":
-            homeworkHandler();
-            break;
-        case "/study/workExam/homeWork/history.html":
-        case "/study/workExam/onlineExam/history.html":
-        case "/study/workExam/testWork/history.html":
-            floatHandler();
-            break;
-        default:
-            console.log(`脚本已准备启动 当前位置:${url}`);
-            break;
-    }
+    delayExec(async () => {
+        //入口
+        switch (url) {
+            case "/common/directory/directory.html":
+                openMenu()
+                await delayExec(async () => {
+                    await expandDir();
+                    openMenu()
+                    console.log("目录已全展开");
+                })
+                _main();
+                break;
+            default:
+                console.log(`脚本已准备启动 当前位置:${url}`);
+                break;
+        }
+    })
 
     //当前页
     let current;
 
-    //刷课主逻辑
-    function _main() {
-        //请求数据
-        $("#olTempleteCellModul").click();
+    //处理当前选中项
+    async function _main() {
+        //打开课程列表
+        openMenu()
         //main函数
         setTimeout(() => {
             //当前小节
-            current = $("li.np-section-level.np-section-level-3.active");
-            switch (current.data().categoryname) {
-                case "pt":
+            current = $(".np-section-level-3.active");
+
+            //无法判断当前课程是否完成
+            if (current.length == 0) {
+                console.log(current);
+                current = $($(".np-section-level-3")[0])
+            }
+            //当前小节课程的类别
+            let type = current.children(".np-section-type").text().trim()
+
+            switch (type) {
+                case "图片":
                 case "文档":
-                    pptHandler(current);
+                    docHandler(current)
                     break;
+                case "ppt":
+                    pptHandler(current)
+                    break;
+                case "swf":
                 case "视频":
                     videoHandler(current);
                     break;
             }
             console.log("当前处理逻辑安排完成,等待执行结果中");
-        }, 10000);
+        }, 5000);
+    }
+    /**
+     * 异步展开全目录
+     */
+    function expandDir() {
+        return new Promise((resolve, reject) => {
+            let root = $(".np-section-level-1 .np-section-title");
+
+            root.each(async (i1, e1) => {
+                $(e1).click()
+                await delayExec(async () => {
+                    $(e1).next("ol").find(".np-section-level-2 a").each(async (i2, e2) => {
+                        await delayExec(async () => {
+                            $(e2).click()
+                            //执行完成
+                            if (i1 === 0) {
+                                resolve()
+                            }
+                        })
+                    })
+                })
+            })
+        })
     }
 
     /**
-     * 检测课程类别 并深层递归
+     * 递归遍历目录树 具体如何处理在_main函数
      */
-    function check(current) {
+    async function check(current) {
         //多级跳转
         if (current.next().length == 0) {
             // current.end();
@@ -122,23 +170,28 @@
             return;
         }
         //查询下一项所属类别
-        switch (current.next().data().categoryname) {
-            case ""://目录
-            case "作业":
-            case "测验":
-                check(current.next());
-                break;
-            case "讨论":
-                setTimeout(() => {
-                    gotoUrl(current.next())
-                }, 20000);
-                check(current.next());
-                break;
-            case "pt":
+        switch (current.next().children(".np-section-type").text().trim()) {
+            // case ""://目录
+            // case "作业":
+            // case "测验":
+            //     check(current.next());
+            //     break;
+            // case "讨论":
+            //     setTimeout(() => {
+            //         gotoUrl(current.next())
+            //     }, 20000);
+            //     check(current.next());
+            //     break;
+            case "ppt":
             case "视频":
+            case "swf":
             case "文档":
-                gotoUrl(current.next());
-                _main();
+            case "图片":
+                console.log(current.next())
+                await delayExec(() => {
+                    gotoUrl(current.next())
+                })
+                _main()
                 break;
         }
     }
@@ -170,7 +223,6 @@
         }
         //配置
         player.setMute(true)//静音
-        player.setPlaybackRate(setting.videoPlaybackRate);
         player.setCurrentQuality(setting.videoQuality);
         //播放回调
         player.on("playlistComplete", () => {
@@ -178,12 +230,46 @@
             delayExec(commentHandler(current));
         });
     }
+    async function docHandler(current) {
+        //随机秒后执行,避免不正常操作加载时间
+
+        //根据按钮状态判断是否还有下一页
+        while ($(".MPreview-pageNext").hasClass('current')) {
+            console.log("翻页了");
+
+            //ppt翻页 异步方式
+            await delayExec(() => {
+                $(".MPreview-pageNext").click()
+            })
+        }
+
+        //提交评论?
+        //随机延迟提交评论
+        delayExec(commentHandler(current));
+    }
+
+
     /**
      * PPT类别处理
+     * 指定PPT点击次数(无法获取iframe无法判定是否完成)
+     *  TODO 无法跨域获取iframe,暂未解决
      */
-    function pptHandler(current) {
-        //等待2秒后执行,避免不正常操作加载时间
-        //延迟提交评论
+    async function pptHandler(current) {
+        // 异步处理
+        await new Promise(async (resolve, reject) => {
+            for (let i = 1; i <= setting.pptNextClick; i++) {
+                //点击下一页
+                await delayExec(() => {
+                    $(".stage-next").click()
+                    //达到次数解除阻塞
+                    if (i == setting.pptNextClick)
+                        resolve()
+                })
+            }
+        })
+
+        //提交评论?
+        //随机延迟提交评论
         delayExec(commentHandler(current));
     }
     /**
@@ -216,15 +302,15 @@
     /**
     * 提交评论
     */
-    function commentHandler(current) {
+    async function commentHandler(current) {
         //评5星
         $("#star #starImg4").click();
         //随机从词库填写评论
-        $("iframe#ueditor_0").contents().find("body.view")[0].innerText = setting.randomComment[rnd(0, setting.randomComment.length - 1)];
+        $(".commentContent").text(setting.randomComment[rnd(0, setting.randomComment.length - 1)])
         //提交
-        delayExec(() => {
+        await delayExec(async () => {
             $("#btnComment").click();
-            delayExec(() => {
+            await delayExec(async () => {
                 $(".sgBtn.ok").click();
                 console.log("评论成功\n");
                 check(current);
