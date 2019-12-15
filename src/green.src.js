@@ -43,6 +43,7 @@
      *  随机延迟执行方法
      * @param {需委托执行的函数} func 
      */
+
     function delayExec(func) {
         return new Promise((resolve, reject) => {
             setTimeout(async () => {
@@ -51,9 +52,18 @@
             }, rnd(setting.minDelayTime, setting.maxDelayTime));
         })
     }
-
-    //跳转到某小节 通过顶栏
-    const gotoUrl = (page) => page.click();
+    //手动加锁 防止递归失败请求数太多导致封禁
+    let j = 0;
+    //跳转到某小节 通过顶栏 
+    const gotoUrl = (page) => {
+        if (j >= 1) {
+            alert('异步处理异常')
+            while (true) console.log("我死了");
+        }
+        j++
+        page.click()
+        j = 0
+    }
     //打开菜单
     const openMenu = () => $(".sildeDirectory").click();
     //跳转下一页
@@ -89,7 +99,7 @@
             //当前小节
             current = $(".np-section-level-3.active");
 
-            //无法判断当前课程是否完成
+            //无法判断当前课程是否完成 跳到第一页
             if (current.length == 0) {
                 console.log(current);
                 current = $($(".np-section-level-3")[0])
@@ -106,12 +116,13 @@
                     pptHandler(current)
                     break;
                 case "swf":
-                      break;
+                    swfHandler(current)
+                    break;
                 case "视频":
                     videoHandler(current);
                     break;
             }
-            console.log("当前处理逻辑安排完成,等待执行结果中");
+            console.log(`当前 ${type} 安排完成,等待执行结果中`);
         }, 5000);
     }
     /**
@@ -171,22 +182,7 @@
         // }
         //查询下一项所属类别
         switch (current.next().children(".np-section-type").text().trim()) {
-            // case ""://目录
-            // case "作业":
-            // case "测验":
-            //     check(current.next());
-            //     break;
-            // case "讨论":
-            //     setTimeout(() => {
-            //         gotoUrl(current.next())
-            //     }, 20000);
-            //     check(current.next());
-            //     break;
             case "swf":
-                  await delayExec(() => {
-                    gotoUrl(current.next())
-                })
-                break;
             case "ppt":
             case "视频":
             case "文档":
@@ -213,6 +209,18 @@
             $(".hasNoLeft").attr(i, "return true")
         console.log("已成功解除限制")
     }
+
+
+    async function swfHandler(current) {
+        //当不支持flash时执行   
+        if ($('.popBox').length !== 0) {
+            $($('.popBox a')[1]).click()
+            await delayExec(commentHandler(current))
+        } else {
+            alert('本脚本默认不支持flash,请关闭后尝试')
+        }
+    }
+
     /**
      * 视频类处理
      */
@@ -233,6 +241,10 @@
             delayExec(commentHandler(current));
         });
     }
+    /**
+     * 文档处理
+     * @param {*} current 
+     */
     async function docHandler(current) {
         //随机秒后执行,避免不正常操作加载时间
 
@@ -275,31 +287,6 @@
         //随机延迟提交评论
         delayExec(commentHandler(current));
     }
-    /**
-     * 提取当前页内容
-     */
-    function exactProblem() {
-        const arr = $(".e-q-body");
-        let text = "";
-
-        for (let x = 0; x < arr.length; x++)
-            text += arr[x].innerText;
-        $("#_content").val(text);
-
-    }
-    /**
-     * 提取题目
-     */
-    function floatHandler() {
-        const div = `<div style="border:#42b983 solid 2px;width: 330px; position: fixed; top: 0; right: 10px;  z-index: 99999">
-                        <button id="extract_btn">提取</button>
-                        <hr/>
-                        <textarea id="_content" style="width: 100%;height: 300px;border: #B3C0D1 solid 2px;overflow: auto;font-size: x-small" />
-                    </div>`;
-        $(div).appendTo('body')
-        $("#extract_btn").bind('click', () => exactProblem())
-    }
-
 
 
     /**
@@ -353,5 +340,29 @@
                 return element;
         }
         return element;
+    }
+    /**
+    * 提取当前页内容
+    */
+    function exactProblem() {
+        const arr = $(".e-q-body");
+        let text = "";
+
+        for (let x = 0; x < arr.length; x++)
+            text += arr[x].innerText;
+        $("#_content").val(text);
+
+    }
+    /**
+     * 提取题目
+     */
+    function floatHandler() {
+        const div = `<div style="border:#42b983 solid 2px;width: 330px; position: fixed; top: 0; right: 10px;  z-index: 99999">
+                        <button id="extract_btn">提取</button>
+                        <hr/>
+                        <textarea id="_content" style="width: 100%;height: 300px;border: #B3C0D1 solid 2px;overflow: auto;font-size: x-small" />
+                    </div>`;
+        $(div).appendTo('body')
+        $("#extract_btn").bind('click', () => exactProblem())
     }
 })();
