@@ -1,6 +1,6 @@
 # SimpleIcveMoocHelper
 
-## 一个简单基于油猴+jquery 开发实现的智慧职教网课助手
+## 一个简单基于油猴+jquery 开发实现的智慧职教MOOC,职教云网课助手
 
 - 支持自动评论
 
