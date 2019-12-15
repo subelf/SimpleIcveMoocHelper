@@ -46,7 +46,6 @@
     function delayExec(func) {
         return new Promise((resolve, reject) => {
             setTimeout(async () => {
-                console.log(func);
                 await func()
                 resolve();
             }, rnd(setting.minDelayTime, setting.maxDelayTime));
