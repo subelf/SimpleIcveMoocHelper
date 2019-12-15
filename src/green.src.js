@@ -294,9 +294,11 @@
     */
     async function commentHandler(current) {
         //在当前评论页已发现自己的评论,取消评论
-        if ($(".np-question-remove.commentDel").length !== 0)
+        if ($(".np-question-remove.commentDel").length !== 0) {
+            console.log("已评论过了");
             check(current);
-
+            return
+        }
         //评5星
         $("#star #starImg4").click();
         //随机从词库填写评论
