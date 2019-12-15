@@ -186,7 +186,6 @@
             case "swf":
             case "文档":
             case "图片":
-                console.log(current.next())
                 await delayExec(() => {
                     gotoUrl(current.next())
                 })
