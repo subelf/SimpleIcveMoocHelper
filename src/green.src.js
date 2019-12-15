@@ -11,7 +11,7 @@
     'use strict';
     const setting = {
         // 随机评论
-        randomComment: ["666666", "好!", ".....", "挺不错的", "豁然开朗"],
+        randomComment: ["666666", "好!", ".....", "挺不错的", "豁然开朗", "厉害"],
         //最高延时
         maxDelayTime: 7000,
         //最低延时
@@ -293,6 +293,10 @@
     * 提交评论
     */
     async function commentHandler(current) {
+        //在当前评论页已发现自己的评论,取消评论
+        if ($(".np-question-remove.commentDel").length !== 0)
+            check(current);
+
         //评5星
         $("#star #starImg4").click();
         //随机从词库填写评论
