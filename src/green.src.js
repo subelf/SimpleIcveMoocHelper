@@ -106,6 +106,7 @@
                     pptHandler(current)
                     break;
                 case "swf":
+                      break;
                 case "视频":
                     videoHandler(current);
                     break;
@@ -181,9 +182,13 @@
             //     }, 20000);
             //     check(current.next());
             //     break;
+            case "swf":
+                  await delayExec(() => {
+                    gotoUrl(current.next())
+                })
+                break;
             case "ppt":
             case "视频":
-            case "swf":
             case "文档":
             case "图片":
                 await delayExec(() => {
