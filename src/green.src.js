@@ -152,9 +152,10 @@
     /**
      * 递归遍历目录树
      */
-    async function check(current) {
+    async function check(currentInner) {
+        // todo 递归有问题
         //多级跳转
-        if (current.next().length == 0) {
+        if (currentInner.length == 0) {
             // current.end();
             //往树根遍历
             //小章节
@@ -168,6 +169,7 @@
                     //关闭当前窗口
                     // closeTab();
                 } else {
+                    // first 进来后 next后导致空出一个
                     check(ancestor.next().find(".np-section-level-3").first());
                 }
             } else {
@@ -175,20 +177,15 @@
             }
             return;
         }
-        // //查询下一个是否已完成
-        // if (current.next().find("span.np-section-type.active").length > 0) {
-        //     check(current.next());
-        //     return;
-        // }
         //查询下一项所属类别
-        switch (current.next().children(".np-section-type").text().trim()) {
+        switch (currentInner.children(".np-section-type").text().trim()) {
             case "swf":
             case "ppt":
             case "视频":
             case "文档":
             case "图片":
                 await delayExec(() => {
-                    gotoUrl(current.next())
+                    gotoUrl(currentInner)
                 })
                 _main()
                 break;
@@ -290,13 +287,14 @@
 
 
     /**
-    * 提交评论
+    * 处理评论
+    *    并准备换页
     */
     async function commentHandler(current) {
         //在当前评论页已发现自己的评论,取消评论
         if ($(".np-question-remove.commentDel").length !== 0) {
             console.log("已评论过了");
-            check(current);
+            check(current.next());
             return
         }
         //评5星
@@ -309,7 +307,7 @@
             await delayExec(async () => {
                 $(".sgBtn.ok").click();
                 console.log("评论成功\n");
-                check(current);
+                check(current.next());
             });
         });
     }
