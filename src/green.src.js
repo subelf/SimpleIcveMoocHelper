@@ -11,7 +11,7 @@
     'use strict';
     const setting = {
         // 随机评论
-        randomComment: ["666666", "好!", ".....", "挺不错的", "豁然开朗", "厉害"],
+        randomComment: ["666666"],
         //最高延时
         maxDelayTime: 7000,
         //最低延时
