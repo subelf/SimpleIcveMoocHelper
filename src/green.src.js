@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         智慧职教网课助手 绿版
-// @version      2.03
+// @version      2.05
 // @description  智慧职教简易自动刷课脚本
 // @author        tuChanged
 // @run-at       document-end
@@ -321,6 +321,10 @@
      * @param {*} current 
      */
     function isFinshed(current) {
+        //防止对话框遮盖
+        if ($('.popBox').length !== 0) {
+            $($('.popBox a')[1]).click()
+        }
         //在当前评论页已发现自己的评论,取消评论
         if ($(".np-question-remove.commentDel").length !== 0) {
             console.log("已评论过了");
