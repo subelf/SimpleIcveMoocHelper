@@ -104,6 +104,12 @@
                 console.log(current);
                 current = $($(".np-section-level-3")[0])
             }
+            //当前已完成直接开始下一轮
+            if (isFinshed(current)) {
+                check(current.next());
+                return
+            }
+
             //当前小节课程的类别
             let type = current.children(".np-section-type").text().trim()
 
@@ -291,9 +297,8 @@
     *    并准备换页
     */
     async function commentHandler(current) {
-        //在当前评论页已发现自己的评论,取消评论
-        if ($(".np-question-remove.commentDel").length !== 0) {
-            console.log("已评论过了");
+
+        if (isFinshed(current)) {
             check(current.next());
             return
         }
@@ -310,6 +315,18 @@
                 check(current.next());
             });
         });
+    }
+    /**
+     * 判断当前页是否已经完成
+     * @param {*} current 
+     */
+    function isFinshed(current) {
+        //在当前评论页已发现自己的评论,取消评论
+        if ($(".np-question-remove.commentDel").length !== 0) {
+            console.log("已评论过了");
+            return true
+        }
+        return false
     }
     /**
     * 提交讨论
