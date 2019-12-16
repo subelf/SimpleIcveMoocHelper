@@ -11,11 +11,7 @@
     'use strict';
     const setting = {
         // 随机评论
-<<<<<<< HEAD
-        randomComment: ["666666"],
-=======
         randomComment: ["666666",],
->>>>>>> origin/master
         //最高延时
         maxDelayTime: 7000,
         //最低延时
