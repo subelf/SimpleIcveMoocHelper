@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         智慧职教网课助手 绿版
-// @version      2.05
+// @version      2.07
 // @description  智慧职教简易自动刷课脚本
 // @author        tuChanged
 // @run-at       document-end
@@ -65,11 +65,21 @@
         j = 0
     }
     //打开菜单
-    const openMenu = () => $(".sildeDirectory").click();
+    const openMenu = () => {
+        //关闭窗口
+        if ($('.popBox').length !== 0) {
+            $($('.popBox a')[1]).click()
+        }
+        $(".sildeDirectory").click();
+    }
     //跳转下一页
     // var nextCourse = () => $(".next").click();
-
+    const lessonID = getQueryValue("cellId")
     delayExec(async () => {
+        //变量提升全局变量
+
+        console.log(`当前课程ID: ${lessonID}`);
+
         //入口
         switch (url) {
             case "/common/directory/directory.html":
@@ -79,6 +89,7 @@
                     openMenu()
                     console.log("目录已全展开");
                 })
+                locateCurrentLocation()
                 _main();
                 break;
             default:
@@ -92,14 +103,16 @@
 
     //处理当前选中项
     async function _main() {
+
         //打开课程列表
         openMenu()
         //main函数
-        setTimeout(() => {
+        setTimeout(async () => {
+
             //当前小节
             current = $(".np-section-level-3.active");
 
-            //无法判断当前课程是否完成 跳到第一页
+            //跳到第一页
             if (current.length == 0) {
                 console.log(current);
                 current = $($(".np-section-level-3")[0])
@@ -109,6 +122,7 @@
                 check(current.next());
                 return
             }
+
 
             //当前小节课程的类别
             let type = current.children(".np-section-type").text().trim()
@@ -131,6 +145,40 @@
             console.log(`当前 ${type} 安排完成,等待执行结果中`);
         }, 5000);
     }
+
+
+    /**
+     * 获取url查询字段
+     * @param {查询字段} query 
+     */
+    function getQueryValue(query) {
+        let url = window.location.search; //获取url中"?"符后的字串
+        let theRequest = new Object();
+        if (url.indexOf("?") != -1) {
+            let str = url.substr(1);
+            let strs = str.split("&");
+            for (let i = 0; i < strs.length; i++)
+                theRequest[strs[i].split("=")[0]] = unescape(strs[i].split("=")[1]);
+        }
+        return theRequest[query];
+    }
+    /**
+     * 找到从课程列表进来点击的位置
+     * @param {*} id 
+     */
+    function locateCurrentLocation() {
+        $('.np-section-level-3.cellClick').each((i, e) => {
+            let x = $(e)
+            if (x.data().cellid === lessonID) {
+                x.click()
+                return
+            }
+        })
+        console.log(`未找到 课程${lessonID}`);
+
+    }
+
+
     /**
      * 异步展开全目录
      */
@@ -159,6 +207,7 @@
      * 递归遍历目录树
      */
     async function check(currentInner) {
+
         // todo 递归有问题
         //多级跳转
         if (currentInner.length == 0) {
@@ -218,10 +267,8 @@
         //当不支持flash时执行   
         if ($('.popBox').length !== 0) {
             $($('.popBox a')[1]).click()
-            await delayExec(commentHandler(current))
-        } else {
-            alert('本脚本默认不支持flash,请关闭后尝试')
         }
+        await delayExec(commentHandler(current))
     }
 
     /**
