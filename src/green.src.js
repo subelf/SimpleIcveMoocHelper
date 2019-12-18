@@ -86,10 +86,12 @@
                 openMenu()
                 await delayExec(async () => {
                     await expandDir();
-                    openMenu()
                     console.log("目录已全展开");
+               
                 })
-                locateCurrentLocation()
+                await delayExec(()=>{
+                    locateCurrentLocation()
+                })
                 _main();
                 break;
             default:
@@ -167,13 +169,17 @@
      * @param {*} id 
      */
     function locateCurrentLocation() {
+        
         $('.np-section-level-3.cellClick').each((i, e) => {
             let x = $(e)
             if (x.data().cellid === lessonID) {
+                console.log(lessonID,e);
                 x.click()
-                return
-            }
+                return false
+            }            
         })
+        console.log( $('.np-section-level-3.cellClick').length);
+        
         console.log(`未找到 课程${lessonID}`);
 
     }
