@@ -16,6 +16,8 @@
 
 - 已支持绿版职教云,zjy2(ver 2.0 added)
 
+- 增加自定义选项openMultiplyComment用于是否启用评论选项卡下多项评论功能(ver 2.08 added)
+
 - ........
 
 ---

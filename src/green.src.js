@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         智慧职教网课助手 绿版
-// @version      2.07
+// @version      2.08
 // @description  智慧职教简易自动刷课脚本
 // @author        tuChanged
 // @run-at       document-end
@@ -11,7 +11,7 @@
     'use strict';
     const setting = {
         // 随机评论
-        randomComment: ["666666",],
+        randomComment: ["........",],
         //最高延时
         maxDelayTime: 7000,
         //最低延时
@@ -21,7 +21,9 @@
         //0-高清 1-清晰 2-流畅 3-原画
         videoQuality: 2,
         //2倍速
-        videoPlaybackRate: 2
+        videoPlaybackRate: 2,
+        //开启所有选项卡的评论
+        openMultiplyComment: false
     }, _self = unsafeWindow,
         url = location.pathname,
         top = _self
@@ -76,7 +78,6 @@
     // var nextCourse = () => $(".next").click();
     const lessonID = getQueryValue("cellId")
     delayExec(async () => {
-        //变量提升全局变量
 
         console.log(`当前课程ID: ${lessonID}`);
 
@@ -87,9 +88,9 @@
                 await delayExec(async () => {
                     await expandDir();
                     console.log("目录已全展开");
-               
+
                 })
-                await delayExec(()=>{
+                await delayExec(() => {
                     locateCurrentLocation()
                 })
                 _main();
@@ -119,11 +120,11 @@
                 console.log(current);
                 current = $($(".np-section-level-3")[0])
             }
-            //当前已完成直接开始下一轮
-            if (isFinshed(current)) {
-                check(current.next());
-                return
-            }
+            // //当前已完成直接开始下一轮
+            // if (isFinshed(current)) {
+            //     check(current.next());
+            //     return
+            // }
 
 
             //当前小节课程的类别
@@ -169,18 +170,16 @@
      * @param {*} id 
      */
     function locateCurrentLocation() {
-        
+
         $('.np-section-level-3.cellClick').each((i, e) => {
             let x = $(e)
             if (x.data().cellid === lessonID) {
-                console.log(lessonID,e);
+                console.log(lessonID, e);
                 x.click()
                 return false
-            }            
+            }
         })
-        console.log( $('.np-section-level-3.cellClick').length);
-        
-        console.log(`未找到 课程${lessonID}`);
+        console.log($('.np-section-level-3.cellClick').length);
 
     }
 
@@ -350,36 +349,138 @@
     *    并准备换页
     */
     async function commentHandler(current) {
-
-        if (isFinshed(current)) {
-            check(current.next());
-            return
+        await submitComment(current)
+        if (setting.openMultiplyComment) {
+            await submitQuestion(current)
+            await submitNote(current)
+            await submitReport(current)
         }
-        //评5星
-        $("#star #starImg4").click();
-        //随机从词库填写评论
-        $(".commentContent").text(setting.randomComment[rnd(0, setting.randomComment.length - 1)])
-        //提交
-        await delayExec(async () => {
-            $("#btnComment").click();
-            await delayExec(async () => {
-                $(".sgBtn.ok").click();
-                console.log("评论成功\n");
-                check(current.next());
-            });
-        });
+        console.log("完成评论环节");
+        check(current.next())
     }
     /**
-     * 判断当前页是否已经完成
-     * @param {*} current 
+     * 评论
      */
-    function isFinshed(current) {
+    async function submitComment() {
+
+        return new Promise(async (resolve, reject) => {
+            if (isFinshed(".np-question-remove.commentDel")) {
+                resolve()
+                return
+            }
+            //评5星
+            $("#star #starImg4").click();
+            //随机从词库填写评论
+            $(".commentContent").text(setting.randomComment[rnd(0, setting.randomComment.length - 1)])
+            //提交
+            await delayExec(async () => {
+                $("#btnComment").click();
+                await delayExec(async () => {
+                    $(".sgBtn.ok").click();
+                    console.log("评论成功\n");
+                    resolve()
+                });
+            });
+        })
+
+    }
+    /**
+     * 问答
+     */
+    async function submitQuestion() {
+        await delayExec(() => {
+            $($(".am-tabs-nav>li a")[1]).click()
+        })
+
+        return new Promise(async (resolve, reject) => {
+
+            if (isFinshed(".np-question-remove.questionDel")) {
+                resolve()
+                return
+            }
+
+
+            //随机从词库填写评论
+            $(".questionContent").text(setting.randomComment[rnd(0, setting.randomComment.length - 1)])
+            //提交
+            await delayExec(async () => {
+                $("#btnQuestion").click();
+                await delayExec(async () => {
+                    $(".sgBtn.ok").click();
+                    console.log("评论成功\n");
+                    resolve()
+                });
+            });
+
+        })
+
+
+    }
+    /**
+     * 笔记
+     * @param  current 
+     */
+    async function submitNote() {
+        await delayExec(() => {
+            $($(".am-tabs-nav>li a")[2]).click()
+        })
+        return new Promise(async (resolve, reject) => {
+            if (isFinshed(".np-question-remove.noteDel")) {
+                resolve()
+                return
+            }
+            //随机从词库填写评论
+            $(".noteContent").text(setting.randomComment[rnd(0, setting.randomComment.length - 1)])
+            //提交
+            await delayExec(async () => {
+                $("#btnNote").click();
+                await delayExec(async () => {
+                    $(".sgBtn.ok").click();
+                    console.log("评论成功\n");
+                    resolve()
+                });
+            });
+        })
+    }
+    /**
+     * 报错
+     */
+    async function submitReport() {
+        await delayExec(() => {
+            $($(".am-tabs-nav>li a")[3]).click()
+        })
+
+        return new Promise(async (resolve, reject) => {
+            if (isFinshed(".np-question-remove.cellErrorDel")) {
+                resolve()
+                return
+            }
+            //随机从词库填写评论
+            $(".cellErrorContent").text(setting.randomComment[rnd(0, setting.randomComment.length - 1)])
+            //提交
+            await delayExec(async () => {
+                $("#btnCellError").click();
+                await delayExec(async () => {
+                    $(".sgBtn.ok").click();
+                    console.log("评论成功\n");
+                    resolve()
+                });
+            });
+        })
+    }
+
+
+    /**
+     * 判断当前页是否已经完成
+     * @param {string} currentFlag
+     */
+    function isFinshed(currentFlag) {
         //防止对话框遮盖
         if ($('.popBox').length !== 0) {
             $($('.popBox a')[1]).click()
         }
         //在当前评论页已发现自己的评论,取消评论
-        if ($(".np-question-remove.commentDel").length !== 0) {
+        if ($(currentFlag).length !== 0) {
             console.log("已评论过了");
             return true
         }
