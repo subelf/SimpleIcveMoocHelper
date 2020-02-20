@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         智慧职教网课助手 绿版
-// @version      2.09
+// @version      2.10
 // @description  智慧职教简易自动刷课脚本
 // @author        tuChanged
 // @run-at       document-end
@@ -25,7 +25,7 @@
         //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置
         openMultiplyComment: false,
         //评论
-        commentEnable:true,
+        commentEnable:false,
         //回答
         questionEnable:false,
         //笔记
@@ -50,9 +50,9 @@
 
     /**
      * 使用异步实现
-     * 
+     *
      *  随机延迟执行方法
-     * @param {需委托执行的函数} func 
+     * @param {需委托执行的函数} func
      */
 
     function delayExec(func) {
@@ -65,7 +65,7 @@
     }
     //手动加锁 防止递归失败请求数太多导致封禁
     let j = 0;
-    //跳转到某小节 通过顶栏 
+    //跳转到某小节 通过顶栏
     const gotoUrl = (page) => {
         if (j >= 1) {
             alert('异步处理异常')
@@ -134,8 +134,6 @@
             //     check(current.next());
             //     return
             // }
-
-
             //当前小节课程的类别
             let type = current.children(".np-section-type").text().trim()
 
@@ -153,6 +151,9 @@
                 case "视频":
                     videoHandler(current);
                     break;
+                case "":
+                    check(current.next())
+                    break;
             }
             console.log(`当前 ${type} 安排完成,等待执行结果中`);
         }, 5000);
@@ -161,7 +162,7 @@
 
     /**
      * 获取url查询字段
-     * @param {查询字段} query 
+     * @param {查询字段} query
      */
     function getQueryValue(query) {
         let url = window.location.search; //获取url中"?"符后的字串
@@ -176,7 +177,7 @@
     }
     /**
      * 找到从课程列表进来点击的位置
-     * @param {*} id 
+     * @param {*} id
      */
     function locateCurrentLocation() {
 
@@ -257,7 +258,13 @@
                     gotoUrl(currentInner)
                 })
                 _main()
-                break;
+                break
+            case "":
+                await delayExec(() => {
+                    gotoUrl(currentInner.next())
+                })
+                _main()
+                break
         }
     }
     /**
@@ -267,7 +274,7 @@
         uncageCopyLimit()
     }
     /*
-     *  解除文本限制   
+     *  解除文本限制
      */
     function uncageCopyLimit() {
         let arr = ["oncontextmenu", "ondragstart", "onselectstart", "onselect", "oncopy", "onbeforecopy"]
@@ -278,7 +285,7 @@
 
 
     async function swfHandler(current) {
-        //当不支持flash时执行   
+        //当不支持flash时执行
         if ($('.popBox').length !== 0) {
             $($('.popBox a')[1]).click()
         }
@@ -307,7 +314,7 @@
     }
     /**
      * 文档处理
-     * @param {*} current 
+     * @param {*} current
      */
     async function docHandler(current) {
         //随机秒后执行,避免不正常操作加载时间
@@ -429,7 +436,7 @@
     }
     /**
      * 笔记
-     * @param  current 
+     * @param  current
      */
     async function submitNote() {
         await delayExec(() => {
