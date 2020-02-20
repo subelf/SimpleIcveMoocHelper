@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         智慧职教网课助手 绿版
-// @version      2.08
+// @version      2.09
 // @description  智慧职教简易自动刷课脚本
 // @author        tuChanged
 // @run-at       document-end
@@ -16,14 +16,23 @@
         maxDelayTime: 7000,
         //最低延时
         minDelayTime: 4000,
-        //ppt下一页点击次数
-        pptNextClick: 20,
+        //理论ppt点击次数
+        pptNextClick: 30,
         //0-高清 1-清晰 2-流畅 3-原画
         videoQuality: 2,
         //2倍速
         videoPlaybackRate: 2,
-        //开启所有选项卡的评论
-        openMultiplyComment: false
+        //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置
+        openMultiplyComment: false,
+        //评论
+        commentEnable:true,
+        //回答
+        questionEnable:false,
+        //笔记
+        noteEnable:false,
+        //报错
+        reportEnable:false
+
     }, _self = unsafeWindow,
         url = location.pathname,
         top = _self
@@ -60,7 +69,7 @@
     const gotoUrl = (page) => {
         if (j >= 1) {
             alert('异步处理异常')
-            while (true) console.log("我死了");
+            while (true) console.log("程序运行异常");
         }
         j++
         page.click()
@@ -349,12 +358,14 @@
     *    并准备换页
     */
     async function commentHandler(current) {
-        await submitComment(current)
-        if (setting.openMultiplyComment) {
-            await submitQuestion(current)
-            await submitNote(current)
-            await submitReport(current)
-        }
+        if(setting.commentEnable||setting.openMultiplyComment)
+                await submitComment(current)
+        if(setting.questionEnable||setting.openMultiplyComment)
+                await submitQuestion(current)
+        if(setting.noteEnable||setting.openMultiplyComment)
+                await submitNote(current)
+        if(setting.reportEnable||setting.openMultiplyComment)
+                await submitReport(current)
         console.log("完成评论环节");
         check(current.next())
     }
