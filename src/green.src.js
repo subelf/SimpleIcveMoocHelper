@@ -149,10 +149,12 @@
                     swfHandler(current)
                     break;
                 case "视频":
-                    videoHandler(current);
+                    videoHandler(current)
                     break;
                 case "图文":
                 case "压缩包":
+                    emptyHandler(current)
+                    break;
                 case "":
                     check(current.next())
                     break;
@@ -161,7 +163,58 @@
         }, 5000);
     }
 
+    /**
+        * 递归遍历目录树
+        */
+    async function check(currentInner) {
 
+        // todo 递归有问题
+        //多级跳转
+        if (currentInner.length == 0) {
+            // current.end();
+            //往树根遍历
+            //小章节
+            let parent = current.closest(".np-section-level-2");
+            if (parent.next().length == 0) {
+                //大章
+                let ancestor = parent.closest(".np-section-level-1")
+                //检测是否到终章
+                if (ancestor.next().length == 0) {
+                    alert("任务完成");
+                    //关闭当前窗口
+                    // closeTab();
+                } else {
+                    // first 进来后 next后导致空出一个
+                    check(ancestor.next().find(".np-section-level-3").first());
+                }
+            } else {
+                check(parent.next().find(".np-section-level-3").first())
+            }
+            return;
+        }
+        //查询下一项所属类别
+        switch (currentInner.children(".np-section-type").text().trim()) {
+            case "swf":
+            case "ppt":
+            case "视频":
+            case "文档":
+            case "图片":
+            case "图文":
+            case "压缩包":
+                await delayExec(() => {
+                    gotoUrl(currentInner)
+                })
+                _main()
+                break
+            case "":
+
+                await delayExec(() => {
+                    gotoUrl(currentInner.next())
+                })
+                _main()
+                break
+        }
+    }
     /**
      * 获取url查询字段
      * @param {查询字段} query
@@ -220,57 +273,7 @@
         })
     }
 
-    /**
-     * 递归遍历目录树
-     */
-    async function check(currentInner) {
 
-        // todo 递归有问题
-        //多级跳转
-        if (currentInner.length == 0) {
-            // current.end();
-            //往树根遍历
-            //小章节
-            let parent = current.closest(".np-section-level-2");
-            if (parent.next().length == 0) {
-                //大章
-                let ancestor = parent.closest(".np-section-level-1")
-                //检测是否到终章
-                if (ancestor.next().length == 0) {
-                    alert("任务完成");
-                    //关闭当前窗口
-                    // closeTab();
-                } else {
-                    // first 进来后 next后导致空出一个
-                    check(ancestor.next().find(".np-section-level-3").first());
-                }
-            } else {
-                check(parent.next().find(".np-section-level-3").first())
-            }
-            return;
-        }
-        //查询下一项所属类别
-        switch (currentInner.children(".np-section-type").text().trim()) {
-            case "swf":
-            case "ppt":
-            case "视频":
-            case "文档":
-            case "图片":
-                await delayExec(() => {
-                    gotoUrl(currentInner)
-                })
-                _main()
-                break
-            case "":
-            case "图文":
-            case "压缩包":
-                await delayExec(() => {
-                    gotoUrl(currentInner.next())
-                })
-                _main()
-                break
-        }
-    }
     /**
      * 作业处理
      */
@@ -286,7 +289,13 @@
             $(".hasNoLeft").attr(i, "return true")
         console.log("已成功解除限制")
     }
-
+    /**
+     * 仅仅评论的处理器
+     * @param {*} current 
+     */
+    async function emptyHandler(current) {
+        await delayExec(commentHandler(current))
+    }
 
     async function swfHandler(current) {
         //当不支持flash时执行
