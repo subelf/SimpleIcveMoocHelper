@@ -23,15 +23,15 @@
         //2倍速
         videoPlaybackRate: 2,
         //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置
-        openMultiplyComment: false,
+        openMultiplyComment: true,
         //评论
-        commentEnable:false,
+        commentEnable: false,
         //回答
-        questionEnable:false,
+        questionEnable: false,
         //笔记
-        noteEnable:false,
+        noteEnable: false,
         //报错
-        reportEnable:false
+        reportEnable: false
 
     }, _self = unsafeWindow,
         url = location.pathname,
@@ -151,6 +151,8 @@
                 case "视频":
                     videoHandler(current);
                     break;
+                case "图文":
+                case "压缩包":
                 case "":
                     check(current.next())
                     break;
@@ -260,6 +262,8 @@
                 _main()
                 break
             case "":
+            case "图文":
+            case "压缩包":
                 await delayExec(() => {
                     gotoUrl(currentInner.next())
                 })
@@ -365,14 +369,14 @@
     *    并准备换页
     */
     async function commentHandler(current) {
-        if(setting.commentEnable||setting.openMultiplyComment)
-                await submitComment(current)
-        if(setting.questionEnable||setting.openMultiplyComment)
-                await submitQuestion(current)
-        if(setting.noteEnable||setting.openMultiplyComment)
-                await submitNote(current)
-        if(setting.reportEnable||setting.openMultiplyComment)
-                await submitReport(current)
+        if (setting.commentEnable || setting.openMultiplyComment)
+            await submitComment(current)
+        if (setting.questionEnable || setting.openMultiplyComment)
+            await submitQuestion(current)
+        if (setting.noteEnable || setting.openMultiplyComment)
+            await submitNote(current)
+        if (setting.reportEnable || setting.openMultiplyComment)
+            await submitReport(current)
         console.log("完成评论环节");
         check(current.next())
     }
