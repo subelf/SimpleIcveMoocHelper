@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         智慧职教网课助手 绿版
-// @version      2.102
+// @version      2.102b1
 // @description  智慧职教简易自动刷课脚本
 // @author        tuChanged
 // @run-at       document-end
 // @grant        unsafeWindow
 // @match       *://zjy2.icve.com.cn/common/*
+// @license      MIT
+// @namespace https://greasyfork.org/users/449085
 // ==/UserScript==
 (function () {
     'use strict';
