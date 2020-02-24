@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         智慧职教网课助手 绿版
-// @version      2.101
+// @version      2.102
 // @description  智慧职教简易自动刷课脚本
 // @author        tuChanged
 // @run-at       document-end
@@ -18,9 +18,10 @@
         minDelayTime: 4000,
         //理论ppt点击次数
         pptNextClick: 30,
-        //0-高清 1-清晰 2-流畅 3-原画
-        videoQuality: 2,
-        //2倍速
+        //0-高清 1-清晰 2-流畅 3-原画 
+        //感谢tonylu00提供最新实测参数 --0-原画 1-高清 2-清晰 3-流畅
+        videoQuality: 3,
+        //2倍速,允许开倍速则有效,请放心使用
         videoPlaybackRate: 2,
         //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置
         openMultiplyComment: true,
