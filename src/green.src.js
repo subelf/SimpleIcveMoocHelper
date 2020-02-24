@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         智慧职教网课助手 绿版
-// @version      2.10
+// @version      2.101
 // @description  智慧职教简易自动刷课脚本
 // @author        tuChanged
 // @run-at       document-end
