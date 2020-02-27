@@ -1,24 +1,28 @@
 // ==UserScript==
-// @name         智慧职教网课助手 绿版
-// @version      2.102b1
-// @description  智慧职教简易自动刷课脚本
+// @name         云课堂智慧职教 职教云  Icve 网课助手 绿版
+// @version      2.11b0
+// @description  智慧职教简约强悍的自动刷课脚本,自定义各项参数,自动刷课件,破解复制粘贴,一键提取题目,自动评论,智能讨论,软件定制
 // @author        tuChanged
 // @run-at       document-end
 // @grant        unsafeWindow
 // @match       *://zjy2.icve.com.cn/common/*
 // @license      MIT
 // @namespace https://greasyfork.org/users/449085
+// @supportURL https://github.com/W-ChihC/SimpleIcveMoocHelper
+// @contributionURL https://greasyfork.org/users/449085
 // ==/UserScript==
 (function () {
     'use strict';
     const setting = {
-        // 随机评论
+        // 随机评论,自行扩充格式如     "你好",     (英文符号)
         randomComment: ["........",],
+        /*延时非最优解,过慢请自行调整*/
         //最高延时
         maxDelayTime: 7000,
         //最低延时
         minDelayTime: 4000,
-        //理论ppt点击次数
+
+        //ppt点击次数,自行根据课件情况修改
         pptNextClick: 30,
         //0-高清 1-清晰 2-流畅 3-原画 
         //感谢tonylu00提供最新实测参数 --0-原画 1-高清 2-清晰 3-流畅
@@ -35,11 +39,14 @@
         noteEnable: false,
         //报错
         reportEnable: false
+        /*
+        * 📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,价格从优,源码调试成功再付款💰,实力保证,包远程,包讲解 QQ:2622321887
+        */
 
     }, _self = unsafeWindow,
         url = location.pathname,
         top = _self
-    //获取jquery
+    /** 等待获取jquery @油猴超星网课助手 wyn665817*/
     try {
         while (top != _self.top) top = top.parent.document ? top.parent : _self.top;
     } catch (err) {
@@ -47,6 +54,7 @@
         top = _self;
     }
     var $ = _self.jQuery || top.jQuery;
+    /** */
 
     //产生区间随机
     const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
@@ -161,6 +169,10 @@
                 case "":
                     check(current.next())
                     break;
+                default:
+                    console.log(`课件 : ${type}未提供兼容,已跳过,请在github issue反馈该日志,与作者取得联系`);
+                    check(current.next())
+                    break;
             }
             console.log(`当前 ${type} 安排完成,等待执行结果中`);
         }, 5000);
@@ -216,6 +228,11 @@
                 })
                 _main()
                 break
+            default:
+                await delayExec(() => {
+                    gotoUrl(currentInner.next())
+                })
+                _main()
         }
     }
     /**
@@ -277,21 +294,7 @@
     }
 
 
-    /**
-     * 作业处理
-     */
-    function homeworkHandler() {
-        uncageCopyLimit()
-    }
-    /*
-     *  解除文本限制
-     */
-    function uncageCopyLimit() {
-        let arr = ["oncontextmenu", "ondragstart", "onselectstart", "onselect", "oncopy", "onbeforecopy"]
-        for (let i of arr)
-            $(".hasNoLeft").attr(i, "return true")
-        console.log("已成功解除限制")
-    }
+
     /**
      * 仅仅评论的处理器
      * @param {*} current 
@@ -577,5 +580,20 @@
                     </div>`;
         $(div).appendTo('body')
         $("#extract_btn").bind('click', () => exactProblem())
+    }
+    /**
+     * 作业处理
+     */
+    function homeworkHandler() {
+        uncageCopyLimit()
+    }
+    /*
+     *  解除文本限制
+     */
+    function uncageCopyLimit() {
+        let arr = ["oncontextmenu", "ondragstart", "onselectstart", "onselect", "oncopy", "onbeforecopy"]
+        for (let i of arr)
+            $(".hasNoLeft").attr(i, "return true")
+        console.log("已成功解除限制")
     }
 })();
