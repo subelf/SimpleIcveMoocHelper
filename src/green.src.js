@@ -1,11 +1,12 @@
 // ==UserScript==
-// @name         云课堂智慧职教 职教云  Icve 网课助手 绿版
-// @version      2.11b0
-// @description  智慧职教简约强悍的自动刷课脚本,自定义各项参数,自动刷课件,破解复制粘贴,一键提取题目,自动评论,智能讨论,软件定制
+// @name         云课堂智慧职教 职教云  Icve 网课助手(绿版)
+// @version      2.126
+// @description  小巧强大的职教云刷课脚本,中文化自定义各项参数,解除作业区复制粘贴限制,一键提取题目,自动评论,智能讨论,软件定制
 // @author        tuChanged
 // @run-at       document-end
 // @grant        unsafeWindow
-// @match       *://zjy2.icve.com.cn/common/*
+// @match       *zjy2.icve.com.cn/common/*
+// @match       *zjy2.icve.com.cn/study/homework*
 // @license      MIT
 // @namespace https://greasyfork.org/users/449085
 // @supportURL https://github.com/W-ChihC/SimpleIcveMoocHelper
@@ -15,32 +16,32 @@
     'use strict';
     const setting = {
         // 随机评论,自行扩充格式如     "你好",     (英文符号)
-        randomComment: ["........",],
-        /*延时非最优解,过慢请自行调整*/
-        //最高延时
-        maxDelayTime: 7000,
-        //最低延时
-        minDelayTime: 4000,
-
-        //ppt点击次数,自行根据课件情况修改
-        pptNextClick: 30,
+        随机评论词库: ["........",],
+        /*影响刷课速度关键选项,延时非最优解,过慢请自行谨慎调整*/
+        最高延迟响应时间: 5000,//毫秒
+        最低延迟响应时间: 3000,//毫秒
+        //自行根据课件情况修改
+        固定PPT页数: 10,//页
         //0-高清 1-清晰 2-流畅 3-原画 
         //感谢tonylu00提供最新实测参数 --0-原画 1-高清 2-清晰 3-流畅
-        videoQuality: 3,
+        视频清晰度: 3,
         //2倍速,允许开倍速则有效,请放心使用
-        videoPlaybackRate: 2,
-        //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置
-        openMultiplyComment: true,
-        //评论
-        commentEnable: false,
-        //回答
-        questionEnable: false,
-        //笔记
-        noteEnable: false,
-        //报错
-        reportEnable: false
+        视频播放倍速: 2,
+        //是否保持静音
+        是否保持静音: true,
+        //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置,默认关闭(false),true为打开
+        激活所有选项卡的评论: false,
+        激活评论选项卡: false,
+        激活问答选项卡: false,
+        激活笔记选项卡: false,
+        激活报错选项卡: false,
+        //和以上设置保持同步
+        未做兼容课件打开评论: false
+
         /*
-        * 📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,价格从优,源码调试成功再付款💰,实力保证,包远程,包讲解 QQ:2622321887
+        * 📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,
+        *    价格从优,源码调试成功再付款💰,
+        *     实力保证,包远程,包讲解 QQ:2622321887
         */
 
     }, _self = unsafeWindow,
@@ -55,86 +56,50 @@
     }
     var $ = _self.jQuery || top.jQuery;
     /** */
-
-    //产生区间随机
+    //产生区间随机数
     const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
-
-    /**
-     * 使用异步实现
-     *
-     *  随机延迟执行方法
-     * @param {需委托执行的函数} func
-     */
-
-    function delayExec(func) {
-        return new Promise((resolve, reject) => {
-            setTimeout(async () => {
-                await func()
-                resolve();
-            }, rnd(setting.minDelayTime, setting.maxDelayTime));
-        })
-    }
-    //手动加锁 防止递归失败请求数太多导致封禁
-    let j = 0;
-    //跳转到某小节 通过顶栏
-    const gotoUrl = (page) => {
-        if (j >= 1) {
-            alert('异步处理异常')
-            while (true) console.log("程序运行异常");
-        }
-        j++
-        page.click()
-        j = 0
-    }
-    //打开菜单
-    const openMenu = () => {
-        //关闭窗口
-        if ($('.popBox').length !== 0) {
-            $($('.popBox a')[1]).click()
-        }
-        $(".sildeDirectory").click();
-    }
     //跳转下一页
     // var nextCourse = () => $(".next").click();
     const lessonID = getQueryValue("cellId")
+    console.log(`当前课程ID: ${lessonID}`);
+    //脚本处理入口函数,仅运行一次
     delayExec(async () => {
-
-        console.log(`当前课程ID: ${lessonID}`);
-
         //入口
         switch (url) {
+            //课件区
             case "/common/directory/directory.html":
                 openMenu()
                 await delayExec(async () => {
                     await expandDir();
-                    console.log("目录已全展开");
+                    console.log("目录全展开.");
 
                 })
                 await delayExec(() => {
                     locateCurrentLocation()
                 })
-                _main();
+                handleCurrentLesson();
                 break;
-            default:
-                console.log(`脚本已准备启动 当前位置:${url}`);
+            //作业区
+            case "/study/homework/preview.html":
+            case "/study/homework/do.html":
+                homeworkHandler()
                 break;
+            // default
         }
+        console.log(`脚本已启动 当前位置:${url}`);
     })
 
     //当前页
     let current;
 
-    //处理当前选中项
-    async function _main() {
-
+    //处理当前选中的课程
+    async function handleCurrentLesson() {
         //打开课程列表
         openMenu()
         //main函数
         setTimeout(async () => {
-
             //当前小节
             current = $(".np-section-level-3.active");
-
             //跳到第一页
             if (current.length == 0) {
                 console.log(current);
@@ -160,7 +125,8 @@
                     swfHandler(current)
                     break;
                 case "视频":
-                    videoHandler(current)
+                case "音频":
+                    mediaHandler(current)
                     break;
                 case "图文":
                 case "压缩包":
@@ -170,9 +136,9 @@
                     check(current.next())
                     break;
                 default:
-                    console.log(`课件 : ${type}未提供兼容,已跳过,请在github issue反馈该日志,与作者取得联系`);
+                    console.log(`课件 : ${type} 未提供兼容, ${setting.未做兼容课件打开评论 ? '已开启兼容评论,仅运行评论' : '已跳过处理'},请在github issue(https://github.com/W-ChihC/SimpleIcveMoocHelper)反馈该日志,与作者取得联系`);
                     check(current.next())
-                    break;
+                    break
             }
             console.log(`当前 ${type} 安排完成,等待执行结果中`);
         }, 5000);
@@ -182,8 +148,6 @@
         * 递归遍历目录树
         */
     async function check(currentInner) {
-
-        // todo 递归有问题
         //多级跳转
         if (currentInner.length == 0) {
             // current.end();
@@ -216,24 +180,61 @@
             case "图片":
             case "图文":
             case "压缩包":
-                await delayExec(() => {
-                    gotoUrl(currentInner)
-                })
-                _main()
+            case "音频":
+                await delayExec(() => gotoUrl(currentInner))
+                handleCurrentLesson()
                 break
             case "":
-
-                await delayExec(() => {
-                    gotoUrl(currentInner.next())
-                })
-                _main()
+                await delayExec(() => gotoUrl(currentInner.next()))
+                handleCurrentLesson()
                 break
             default:
-                await delayExec(() => {
-                    gotoUrl(currentInner.next())
-                })
-                _main()
+                await delayExec(() => gotoUrl(currentInner.next()))
+                handleCurrentLesson()
         }
+    }
+
+
+
+    /**
+     * 使用异步实现
+     *
+     *  随机延迟执行方法
+     * @param {需委托执行的函数} func
+     */
+
+    function delayExec(func) {
+        return new Promise((resolve, reject) => {
+            setTimeout(async () => {
+                try {
+                    await func()
+                } catch (error) {
+                    console.log(func, error);
+                }
+                resolve();
+            }, rnd(setting.最低延迟响应时间, setting.最高延迟响应时间));
+        })
+    }
+    //手动加锁 防止递归失败请求数太多导致封禁
+    let block = false;
+    //跳转到某小节 通过顶栏
+    function gotoUrl(page) {
+        if (block) {
+            alert('异步处理异常')
+            while (true) console.log("程序运行异常");
+        }
+        block = true
+        page.click()
+        block = false
+        // resovle()
+    }
+    //打开菜单
+    const openMenu = () => {
+        //关闭窗口
+        if ($('.popBox').length !== 0) {
+            $($('.popBox a')[1]).click()
+        }
+        $(".sildeDirectory").click();
     }
     /**
      * 获取url查询字段
@@ -264,7 +265,7 @@
                 return false
             }
         })
-        console.log($('.np-section-level-3.cellClick').length);
+        // console.log($('.np-section-level-3.cellClick').length);
 
     }
 
@@ -312,22 +313,34 @@
     }
 
     /**
-     * 视频类处理
+     * 视频/音频类处理
      */
-    function videoHandler(current) {
+    function mediaHandler(current) {
         let player = top.jwplayer($(".jwplayer").attr("id"));
+
+        //视频暂停状态
+        if (player.getState() == "paused") {
+            console.log("媒体已暂停,恢复播放");
+            player.play()
+        }
+
         //播放回调
         if (player.getState() == "complete") {
-            console.log("视频原已播放完毕\n");
+            console.log("媒体已播放完毕\n");
             delayExec(commentHandler(current));
             return;
         }
         //配置
-        player.setMute(true)//静音
-        player.setCurrentQuality(setting.videoQuality);
+        player.setMute(setting.是否保持静音)//静音
+        player.setCurrentQuality(setting.视频清晰度)
+        try {
+            player.setPlaybackRate(setting.视频播放倍速)
+        } catch (error) {
+            console.log('倍速开启失败');
+        }
         //播放回调
         player.on("playlistComplete", () => {
-            console.log("视频播放完成\n");
+            console.log("媒体播放完成\n");
             delayExec(commentHandler(current));
         });
     }
@@ -340,7 +353,7 @@
 
         //根据按钮状态判断是否还有下一页
         while ($(".MPreview-pageNext").hasClass('current')) {
-            console.log("翻页了");
+            console.log("文档翻页了");
 
             //ppt翻页 异步方式
             await delayExec(() => {
@@ -362,13 +375,15 @@
     async function pptHandler(current) {
         // 异步处理
         await new Promise(async (resolve, reject) => {
-            for (let i = 1; i <= setting.pptNextClick; i++) {
+            for (let i = 1; i <= setting.固定PPT页数; i++) {
                 //点击下一页
                 await delayExec(() => {
                     $(".stage-next").click()
+                    console.log(`ppt第${i}页`);
                     //达到次数解除阻塞
-                    if (i == setting.pptNextClick)
+                    if (i == setting.固定PPT页数)
                         resolve()
+
                 })
             }
         })
@@ -384,15 +399,15 @@
     *    并准备换页
     */
     async function commentHandler(current) {
-        if (setting.commentEnable || setting.openMultiplyComment)
+        if (setting.激活评论选项卡 || setting.激活所有选项卡的评论)
             await submitComment(current)
-        if (setting.questionEnable || setting.openMultiplyComment)
+        if (setting.激活问答选项卡 || setting.激活所有选项卡的评论)
             await submitQuestion(current)
-        if (setting.noteEnable || setting.openMultiplyComment)
+        if (setting.激活笔记选项卡 || setting.激活所有选项卡的评论)
             await submitNote(current)
-        if (setting.reportEnable || setting.openMultiplyComment)
+        if (setting.激活报错选项卡 || setting.激活所有选项卡的评论)
             await submitReport(current)
-        console.log("完成评论环节");
+        console.log("完成评论");
         check(current.next())
     }
     /**
@@ -408,7 +423,7 @@
             //评5星
             $("#star #starImg4").click();
             //随机从词库填写评论
-            $(".commentContent").text(setting.randomComment[rnd(0, setting.randomComment.length - 1)])
+            $(".commentContent").text(setting.随机评论词库[rnd(0, setting.随机评论词库.length - 1)])
             //提交
             await delayExec(async () => {
                 $("#btnComment").click();
@@ -438,7 +453,7 @@
 
 
             //随机从词库填写评论
-            $(".questionContent").text(setting.randomComment[rnd(0, setting.randomComment.length - 1)])
+            $(".questionContent").text(setting.随机评论词库[rnd(0, setting.随机评论词库.length - 1)])
             //提交
             await delayExec(async () => {
                 $("#btnQuestion").click();
@@ -467,7 +482,7 @@
                 return
             }
             //随机从词库填写评论
-            $(".noteContent").text(setting.randomComment[rnd(0, setting.randomComment.length - 1)])
+            $(".noteContent").text(setting.随机评论词库[rnd(0, setting.随机评论词库.length - 1)])
             //提交
             await delayExec(async () => {
                 $("#btnNote").click();
@@ -493,7 +508,7 @@
                 return
             }
             //随机从词库填写评论
-            $(".cellErrorContent").text(setting.randomComment[rnd(0, setting.randomComment.length - 1)])
+            $(".cellErrorContent").text(setting.随机评论词库[rnd(0, setting.随机评论词库.length - 1)])
             //提交
             await delayExec(async () => {
                 $("#btnCellError").click();
@@ -573,7 +588,7 @@
      * 提取题目
      */
     function floatHandler() {
-        const div = `<div style="border:#42b983 solid 2px;width: 330px; position: fixed; top: 0; right: 10px;  z-index: 99999">
+        const div = `<div style="border:#42b983 solid 2px;width: 330px; position: fixed; top: 0; right: 10px;  z-index: 9999">
                         <button id="extract_btn">提取</button>
                         <hr/>
                         <textarea id="_content" style="width: 100%;height: 300px;border: #B3C0D1 solid 2px;overflow: auto;font-size: x-small" />
@@ -594,6 +609,6 @@
         let arr = ["oncontextmenu", "ondragstart", "onselectstart", "onselect", "oncopy", "onbeforecopy"]
         for (let i of arr)
             $(".hasNoLeft").attr(i, "return true")
-        console.log("已成功解除限制")
+        console.log("已成功复制解除限制,📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,价格从优,源码调试成功再付款💰,实力保证,包远程,包讲解 QQ:2622321887")
     }
 })();
