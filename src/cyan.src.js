@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         智慧职教 Icve 网课助手(青版)
-// @version      0.1
+// @version      0.2
 // @description  小巧强大的智慧职教刷课脚本,中文化自定义各项参数
 // @author        tuChanged
 // @run-at       document-end
@@ -65,20 +65,17 @@
         //非小节,解析目录
         dirParser()
     } else {
+        console.log(`当前课件为${type}`);
         switch (type) {
             case "video":
                 delayExec(() => mediaHandler())
-                // mediaHandler()
                 break;
             case "text":
             case "doc":
                 delayExec(() => docHandler())
-                // docHandler()
                 break
             default:
-                delayExec(() => {
-                    currentCompleted()
-                })
+                delayExec(() => currentCompleted())
                 break;
         }
     }
@@ -90,7 +87,7 @@
         db.transaction(['course'], 'readwrite').objectStore('course')
             .delete(cellID).onsuccess = function (params) {
                 console.log(`课程${cellID}已完成`);
-                nextLesson()
+                delayExec(() => nextLesson())
             }
     }
 
@@ -98,9 +95,15 @@
         db.transaction(['course'], 'readwrite').objectStore('course')
             .openCursor()
             .onsuccess = (event) => {
-                console.log(`课程${event}已准备`);
-                let { ChapterId, CellType, Id } = event.target.result.value || {};
-                gotoURL(`dir_course.html?courseId=${courseID}&chapterId=${ChapterId}&type=${CellType}#${Id}`)
+                console.log(event, `课程已准备`);
+                const result = event.target.result;
+                if (result) {
+                    let { ChapterId, CellType, Id } = result.value || {};
+                    gotoURL(`dir_course.html?courseId=${courseID}&chapterId=${ChapterId}&type=${CellType}#${Id}`)
+                } else {
+                    console.log("数据库读取失败");
+                }
+
             }
     }
     /**
@@ -194,9 +197,9 @@
             dbRequest.addEventListener('upgradeneeded', e => {
                 const objectStore = e.target.result
                     .createObjectStore('course', { keyPath: 'Id', autoIncrement: false });
-                //多字段查询
-                objectStore.createIndex('SectionIdIndex', 'SectionId', { unique: false });
-                objectStore.createIndex('ChapterIdIndex', 'ChapterId', { unique: false });
+                // //多字段查询
+                // objectStore.createIndex('SectionIdIndex', 'SectionId', { unique: false });
+                // objectStore.createIndex('ChapterIdIndex', 'ChapterId', { unique: false });
             });
             dbRequest.onsuccess = function (e) {
                 db = e.target.result;
@@ -282,7 +285,6 @@
         } catch (error) {
             console.log('倍速开启失败');
         }
-        console.log(player);
 
         //播放回调
         player.onPlaylistComplete(function () {
