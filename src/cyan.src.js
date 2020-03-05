@@ -101,7 +101,7 @@
                     let { ChapterId, CellType, Id } = result.value || {};
                     gotoURL(`dir_course.html?courseId=${courseID}&chapterId=${ChapterId}&type=${CellType}#${Id}`)
                 } else {
-                    console.log("数据库读取失败");
+                  console.log("数据库读取失败,请规范操作,从课程目录进入\n清除浏览器IndexDB数据库后再次尝试");
                 }
 
             }
