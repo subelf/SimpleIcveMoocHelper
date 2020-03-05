@@ -57,7 +57,7 @@
     //小节ID
     let cellID = getQueryValue("#")
     //小节类型
-    let type = getQueryValue("type")
+    const type = getQueryValue("type")
     let db = undefined
     await initDB()
 

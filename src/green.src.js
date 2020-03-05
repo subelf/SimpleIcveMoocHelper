@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版)
-// @version      2.126
+// @version      2.13.0
 // @description  小巧强大的职教云刷课脚本,中文化自定义各项参数,解除作业区复制粘贴限制,一键提取题目,自动评论,智能讨论,软件定制
 // @author        tuChanged
 // @run-at       document-end
 // @grant        unsafeWindow
+// @grant        GM_xmlhttpRequest
 // @match       *zjy2.icve.com.cn/common/*
 // @match       *zjy2.icve.com.cn/study/homework*
+// @match       *.zjy2.icve.com.cn/study/homework*
 // @license      MIT
 // @namespace https://greasyfork.org/users/449085
 // @supportURL https://github.com/W-ChihC/SimpleIcveMoocHelper
@@ -29,6 +31,8 @@
         视频播放倍速: 2,
         //是否保持静音
         是否保持静音: true,
+        //答题口令码/暗号
+        口令码: "",
         //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置,默认关闭(false),true为打开
         激活所有选项卡的评论: false,
         激活评论选项卡: false,
@@ -36,7 +40,9 @@
         激活笔记选项卡: false,
         激活报错选项卡: false,
         //和以上设置保持同步
-        未做兼容课件打开评论: false
+        未做兼容课件打开评论: false,
+        //在完成课件之前打开评论,
+        激活提前评论: false
 
         /*
         * 📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,
@@ -54,12 +60,12 @@
         console.log(err);
         top = _self;
     }
-    var $ = _self.jQuery || top.jQuery;
+    let $ = _self.jQuery || top.jQuery;
     /** */
     //产生区间随机数
     const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
     //跳转下一页
-    // var nextCourse = () => $(".next").click();
+    // let nextCourse = () => $(".next").click();
     const lessonID = getQueryValue("cellId")
     console.log(`当前课程ID: ${lessonID}`);
     //脚本处理入口函数,仅运行一次
@@ -276,15 +282,19 @@
     function expandDir() {
         return new Promise((resolve, reject) => {
             let root = $(".np-section-level-1 .np-section-title");
-
+            let endFlag = 0
             root.each(async (i1, e1) => {
                 $(e1).click()
+                //fix 空大章节
+                if ($(e1).children().length == 0) {
+                    endFlag++
+                }
                 await delayExec(async () => {
                     $(e1).next("ol").find(".np-section-level-2 a").each(async (i2, e2) => {
                         await delayExec(async () => {
                             $(e2).click()
                             //执行完成
-                            if (i1 === 0) {
+                            if (i1 === endFlag) {
                                 resolve()
                             }
                         })
@@ -301,10 +311,18 @@
      * @param {*} current 
      */
     async function emptyHandler(current) {
+        if (setting.激活提前评论) {
+            delayExec(commentHandler(current));
+            return
+        }
         await delayExec(commentHandler(current))
     }
 
     async function swfHandler(current) {
+        if (setting.激活提前评论) {
+            delayExec(commentHandler(current));
+            return
+        }
         //当不支持flash时执行
         if ($('.popBox').length !== 0) {
             $($('.popBox a')[1]).click()
@@ -316,6 +334,11 @@
      * 视频/音频类处理
      */
     function mediaHandler(current) {
+        if (setting.激活提前评论) {
+            delayExec(commentHandler(current));
+            return
+        }
+
         let player = top.jwplayer($(".jwplayer").attr("id"));
 
         //视频暂停状态
@@ -349,18 +372,20 @@
      * @param {*} current
      */
     async function docHandler(current) {
-        //随机秒后执行,避免不正常操作加载时间
 
-        //根据按钮状态判断是否还有下一页
-        while ($(".MPreview-pageNext").hasClass('current')) {
-            console.log("文档翻页了");
+        if (!setting.激活提前评论) {
+            //随机秒后执行,避免不正常操作加载时间
 
-            //ppt翻页 异步方式
-            await delayExec(() => {
-                $(".MPreview-pageNext").click()
-            })
+            //根据按钮状态判断是否还有下一页
+            while ($(".MPreview-pageNext").hasClass('current')) {
+                console.log("文档翻页了");
+
+                //ppt翻页 异步方式
+                await delayExec(() => {
+                    $(".MPreview-pageNext").click()
+                })
+            }
         }
-
         //提交评论?
         //随机延迟提交评论
         delayExec(commentHandler(current));
@@ -373,6 +398,10 @@
      *  TODO 无法跨域获取iframe,暂未解决
      */
     async function pptHandler(current) {
+        if (setting.激活提前评论) {
+            delayExec(commentHandler(current));
+            return
+        }
         // 异步处理
         await new Promise(async (resolve, reject) => {
             for (let i = 1; i <= setting.固定PPT页数; i++) {
@@ -601,6 +630,7 @@
      */
     function homeworkHandler() {
         uncageCopyLimit()
+        // bindBtnToQuestion()
     }
     /*
      *  解除文本限制
