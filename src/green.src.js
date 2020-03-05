@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版)
-// @version      2.13.0
+// @version      2.14.0
 // @description  小巧强大的职教云刷课脚本,中文化自定义各项参数,解除作业区复制粘贴限制,一键提取题目,自动评论,智能讨论,软件定制
 // @author        tuChanged
 // @run-at       document-end
@@ -19,6 +19,8 @@
     const setting = {
         // 随机评论,自行扩充格式如     "你好",     (英文符号)
         随机评论词库: ["........",],
+        //感谢@清酒不浊 提醒,策略改变,已只要求点击 
+        激活点即完: true,
         /*影响刷课速度关键选项,延时非最优解,过慢请自行谨慎调整*/
         最高延迟响应时间: 5000,//毫秒
         最低延迟响应时间: 3000,//毫秒
@@ -116,37 +118,42 @@
             //     check(current.next());
             //     return
             // }
-            //当前小节课程的类别
-            let type = current.children(".np-section-type").text().trim()
 
-            switch (type) {
-                case "图片":
-                case "文档":
-                    docHandler(current)
-                    break;
-                case "ppt":
-                    pptHandler(current)
-                    break;
-                case "swf":
-                    swfHandler(current)
-                    break;
-                case "视频":
-                case "音频":
-                    mediaHandler(current)
-                    break;
-                case "图文":
-                case "压缩包":
-                    emptyHandler(current)
-                    break;
-                case "":
-                    check(current.next())
-                    break;
-                default:
-                    console.log(`课件 : ${type} 未提供兼容, ${setting.未做兼容课件打开评论 ? '已开启兼容评论,仅运行评论' : '已跳过处理'},请在github issue(https://github.com/W-ChihC/SimpleIcveMoocHelper)反馈该日志,与作者取得联系`);
-                    check(current.next())
-                    break
+            if (setting.激活点即完) {
+                delayExec(commentHandler(current))
+                return
+            } else {
+                //当前小节课程的类别
+                let type = current.children(".np-section-type").text().trim()
+                switch (type) {
+                    case "图片":
+                    case "文档":
+                        docHandler(current)
+                        break;
+                    case "ppt":
+                        pptHandler(current)
+                        break;
+                    case "swf":
+                        swfHandler(current)
+                        break;
+                    case "视频":
+                    case "音频":
+                        mediaHandler(current)
+                        break;
+                    case "图文":
+                    case "压缩包":
+                        emptyHandler(current)
+                        break;
+                    case "":
+                        check(current.next())
+                        break;
+                    default:
+                        console.log(`课件 : ${type} 未提供兼容, ${setting.未做兼容课件打开评论 ? '已开启兼容评论,仅运行评论' : '已跳过处理'},请在github issue(https://github.com/W-ChihC/SimpleIcveMoocHelper)反馈该日志,与作者取得联系`);
+                        check(current.next())
+                        break
+                }
+                console.log(`当前 ${type} 安排完成,等待执行结果中`);
             }
-            console.log(`当前 ${type} 安排完成,等待执行结果中`);
         }, 5000);
     }
 
@@ -436,7 +443,7 @@
             await submitNote(current)
         if (setting.激活报错选项卡 || setting.激活所有选项卡的评论)
             await submitReport(current)
-        console.log("完成评论");
+        console.log("完成评论环节");
         check(current.next())
     }
     /**
@@ -625,13 +632,7 @@
         $(div).appendTo('body')
         $("#extract_btn").bind('click', () => exactProblem())
     }
-    /**
-     * 作业处理
-     */
-    function homeworkHandler() {
-        uncageCopyLimit()
-        // bindBtnToQuestion()
-    }
+
     /*
      *  解除文本限制
      */
@@ -641,4 +642,12 @@
             $(".hasNoLeft").attr(i, "return true")
         console.log("已成功复制解除限制,📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,价格从优,源码调试成功再付款💰,实力保证,包远程,包讲解 QQ:2622321887")
     }
+    /**
+    * 作业处理
+    */
+    function homeworkHandler() {
+        uncageCopyLimit()
+        // bindBtnToQuestion()
+    }
+   
 })();
