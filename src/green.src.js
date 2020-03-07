@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版)
-// @version      2.14.0
-// @description  小巧强大的职教云刷课脚本,中文化自定义各项参数,解除作业区复制粘贴限制,一键提取题目,自动评论,智能讨论,软件定制
+// @version      2.15.1
+// @description  小巧强大的职教云刷课脚本,中文化自定义各项参数,解除作业区复制粘贴限制,一键提取题目,自动评论,智能讨论,鸡肋搜题,软件定制
 // @author        tuChanged
 // @run-at       document-end
 // @grant        unsafeWindow
 // @grant        GM_xmlhttpRequest
+// @match       *.zjy2.icve.com.cn/common/*
 // @match       *zjy2.icve.com.cn/common/*
 // @match       *zjy2.icve.com.cn/study/homework*
 // @match       *.zjy2.icve.com.cn/study/homework*
@@ -33,8 +34,8 @@
         视频播放倍速: 2,
         //是否保持静音
         是否保持静音: true,
-        //答题口令码/暗号
-        口令码: "",
+        //答题口令码/暗号 获取地址 http://www.lelunwen.com/e/action/ListInfo/?classid=45&tdsourcetag=sxb_365
+        口令码: "2232",
         //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置,默认关闭(false),true为打开
         激活所有选项卡的评论: false,
         激活评论选项卡: false,
@@ -63,6 +64,8 @@
         top = _self;
     }
     let $ = _self.jQuery || top.jQuery;
+    let commentDelay = 0
+
     /** */
     //产生区间随机数
     const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
@@ -215,7 +218,7 @@
      *  随机延迟执行方法
      * @param {需委托执行的函数} func
      */
-
+    //评论限制时间
     function delayExec(func) {
         return new Promise((resolve, reject) => {
             setTimeout(async () => {
@@ -225,7 +228,7 @@
                     console.log(func, error);
                 }
                 resolve();
-            }, rnd(setting.最低延迟响应时间, setting.最高延迟响应时间));
+            }, rnd(commentDelay || setting.最低延迟响应时间, commentDelay || setting.最高延迟响应时间));
         })
     }
     //手动加锁 防止递归失败请求数太多导致封禁
@@ -437,12 +440,18 @@
     async function commentHandler(current) {
         if (setting.激活评论选项卡 || setting.激活所有选项卡的评论)
             await submitComment(current)
-        if (setting.激活问答选项卡 || setting.激活所有选项卡的评论)
-            await submitQuestion(current)
         if (setting.激活笔记选项卡 || setting.激活所有选项卡的评论)
             await submitNote(current)
-        if (setting.激活报错选项卡 || setting.激活所有选项卡的评论)
+        if (setting.激活问答选项卡 || setting.激活所有选项卡的评论) {
+            commentDelay = 60000
+            await submitQuestion(current)
+
+        }
+        if (setting.激活报错选项卡 || setting.激活所有选项卡的评论) {
+            commentDelay = 60000
             await submitReport(current)
+
+        }
         console.log("完成评论环节");
         check(current.next())
     }
@@ -479,7 +488,7 @@
         await delayExec(() => {
             $($(".am-tabs-nav>li a")[1]).click()
         })
-
+        commentDelay = 0
         return new Promise(async (resolve, reject) => {
 
             if (isFinshed(".np-question-remove.questionDel")) {
@@ -537,7 +546,7 @@
         await delayExec(() => {
             $($(".am-tabs-nav>li a")[3]).click()
         })
-
+        commentDelay = 0
         return new Promise(async (resolve, reject) => {
             if (isFinshed(".np-question-remove.cellErrorDel")) {
                 resolve()
@@ -593,7 +602,7 @@
             );
         }, 10000);
         /*  //返回上一页
-         delayExec(() => window.history.go(-1)); */
+        delayExec(() => window.history.go(-1)); */
     }
 
     /**
@@ -625,17 +634,17 @@
      */
     function floatHandler() {
         const div = `<div style="border:#42b983 solid 2px;width: 330px; position: fixed; top: 0; right: 10px;  z-index: 9999">
-                        <button id="extract_btn">提取</button>
-                        <hr/>
-                        <textarea id="_content" style="width: 100%;height: 300px;border: #B3C0D1 solid 2px;overflow: auto;font-size: x-small" />
-                    </div>`;
+                            <button id="extract_btn">提取</button>
+                            <hr/>
+                            <textarea id="_content" style="width: 100%;height: 300px;border: #B3C0D1 solid 2px;overflow: auto;font-size: x-small" />
+                        </div>`;
         $(div).appendTo('body')
         $("#extract_btn").bind('click', () => exactProblem())
     }
 
     /*
-     *  解除文本限制
-     */
+    *  解除文本限制
+    */
     function uncageCopyLimit() {
         let arr = ["oncontextmenu", "ondragstart", "onselectstart", "onselect", "oncopy", "onbeforecopy"]
         for (let i of arr)
@@ -647,7 +656,192 @@
     */
     function homeworkHandler() {
         uncageCopyLimit()
-        // bindBtnToQuestion()
+        bindBtnToQuestion()
     }
-   
+    /**
+ * 将查询按钮按ID调用插入到题目区未位
+ */
+    function bindBtnToQuestion() {
+        // $(`<button class="qBtn" type="button">🔍</button>`).appendTo(".e-q-quest")
+        // $($(".e-a-g")[2]).prev(".e-q-q")
+        $(".e-q-quest").each(async (i, e) => {
+            $(`<button class="qBtn" x="${i}" type="button">🔍</button>`).appendTo($(e))
+        })
+        //绕过网站全局事件注册
+        $(".qBtn").on("click", (event) => {
+            searchAnswer(event.srcElement.attributes["x"].value)
+        })
+    }
+
+    //上学吧获取 div.main_text 正则
+    const htmPattern = /<div class="main_text">[\s\S]*?<\/div>[\s\D]*?<\/div>/g
+    //页数正则
+    const pagePattern = /Page=(\d{1,5})/
+
+    /**
+     * 搜索答案
+     * @param {*} i 
+     */
+    function searchAnswer(i, q = undefined, page = 1) {
+        console.log(page);
+
+        // 往前查找同辈元素
+        const question = $($(".qBtn")[i]).prevAll(".e-q-q").text();
+        requestAPI('GET', `https://www.shangxueba.com/ask/search.aspx?Page=${page}&key=${escape(q || question)}`, {
+            onSuccess: (xhr) => {
+                const src = xhr.response.match(htmPattern)[0];
+                let data = []
+                const htmObj = $(src);
+                htmObj.find(".sousuojieguo li")
+                    .each((i, e) => {
+                        const $e = $(e);
+                        data.push({
+                            href: $e.find("a").first().attr("href"),
+                            title: $e.find(".text_tit").html(),
+                            content: $e.find(".text_content").html()
+                        })
+                    })
+
+                console.log(xhr, htmObj);
+
+                //提取总页数
+                const pageCount = htmObj.find(`a[title="最后页"]`)
+                    .attr("href")
+                    .match(pagePattern)[1];
+
+                showAnswerListDiv(question, page, data, pageCount)
+            }
+        })
+    }
+
+    /**
+     * 显示搜索框
+     * @param {*} params 
+     */
+    function showAnswerListDiv(questionTitle, page, data, pageCount) {
+        if ($("#answerBlock").length == 0) {
+            const baseDiv = ` <div id="answerBlock"   style="background: #cccccc8c;max-width:50%; float: right; margin-right: 230px;height:400px;overflow:auto; position: fixed; top: 0; right: 0; z-index: 9999;">
+                                    <table border="1" cellspacing="0" align="center" style="font-size: 14px;">
+                                    <caption>${questionTitle}</caption>
+                                    <thead>
+                                        <tr>
+                                            <th>标题</th>
+                                            <th>内容</th>
+                                            <th>操作</th>
+                                        </tr>
+                                        <tr>
+                                            <th colspan="3">结果</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody align="center">
+                                            
+                                    </tbody>
+                                    <tfoot align="center">
+                                        <tr>
+                                            <td><button type="button" id="nextBtn" >下一页</a></td>
+                                            <td>总页数:<span id="count">${pageCount}</span></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>`
+            $(baseDiv).appendTo("body")
+        } else {
+            //更新对应数据
+            $("#answerBlock caption").text(questionTitle)
+            $("#answerBlock #count").text(pageCount)
+            //删除原有的数据
+            $('#answerBlock tbody tr').detach()
+        }
+        let tbody = "";
+        data.forEach(({ href, title, content }, i) => {
+            tbody += `<tr>
+                        <td><a href="${href}">${title}</a></td>
+                        <td>
+                            <p>${content}</p>
+                        </td>
+                        <td><button class="viewAnswer" type="button"  x=${i} url="${href}">查看</button></td>
+                    </tr>
+                    <tr>
+                        <td colspan="3"><textarea id="answerArea${i}" cols="80" rows="2"></textarea></td>
+                    </tr>`});
+
+
+        /**
+         * 更新下一页
+         */
+        $("#nextBtn").off("click")
+        $("#nextBtn").on("click", (event) => {
+            searchAnswer(0, questionTitle, page + 1)
+        })
+        /**
+         * tbody区
+         */
+        $(tbody).appendTo("#answerBlock table tbody")
+        $('#answerBlock p').css({ margin: '0', wordwrap: 'break-word', maxwidth: '50px' });
+        $('#answerBlock em').css({ color: 'red' })
+        //绕过网站全局事件注册答案搜索填充
+        $(".viewAnswer").on("click", (event) => {
+            fillAnswer(event.srcElement.attributes["url"].value, event.srcElement.attributes["x"].value)
+        })
+    }
+
+    /**
+    * 答案填充
+    */
+    function fillAnswer(docURL, i) {
+        search365(docURL, (answer) => {
+            console.log(answer);
+            $(`#answerArea${i}`).text(eval("'" + answer + "'"))
+        })
+    }
+
+    /**
+     * 365上学吧破解
+     * @param {*} docURL 上学吧URL
+     */
+    function search365(docURL, fillMethod) {
+        requestAPI('POST', 'http://www.shangxueba365.com/get.php', {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            data: `docinfo=${docURL}&anhao=${setting.口令码}`,
+            onSuccess: (xhr) => {
+                fillMethod(xhr.response)
+            }
+        })
+    }
+
+
+
+    /**
+    * 对XHR的二次全局封装,方便后期扩展
+    * @param {*} method 
+    * @param {*} url 
+    * @param {*} headers 
+    * @param {*} data 
+    * @param {*} onSuccess 
+    */
+    function requestAPI(method, url, { headers, data, onSuccess }) {
+        GM_xmlhttpRequest({
+            method: method,
+            url: url,
+            headers: headers,
+            data: data,
+            timeout: setting.请求超时,
+            onload: function (xhr) {
+                switch (xhr.status) {
+                    case 200:
+                        // let obj = $.parseJSON(xhr.responseText) || {};
+                        onSuccess(xhr)
+                        break;
+                    default:
+                        console.log("请求失败 " + xhr);
+                        break;
+                }
+            },
+            ontimeout: function () {
+                console.log("响应超时");
+            }
+        });
+    }
 })();
