@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版)
-// @version      2.15.1
+// @version      2.15.2
 // @description  小巧强大的职教云刷课脚本,中文化自定义各项参数,解除作业区复制粘贴限制,一键提取题目,自动评论,智能讨论,鸡肋搜题,软件定制
 // @author        tuChanged
 // @run-at       document-end
@@ -791,7 +791,8 @@
     function fillAnswer(docURL, i) {
         search365(docURL, (answer) => {
             console.log(answer);
-            $(`#answerArea${i}`).text(eval("'" + answer + "'"))
+
+            $(`#answerArea${i}`).text(JSON.parse(answer).msg)
         })
     }
 
@@ -806,7 +807,7 @@
             },
             data: `docinfo=${docURL}&anhao=${setting.口令码}`,
             onSuccess: (xhr) => {
-                fillMethod(xhr.response)
+                fillMethod(xhr.responseText)
             }
         })
     }
@@ -835,7 +836,7 @@
                         onSuccess(xhr)
                         break;
                     default:
-                        console.log("请求失败 " + xhr);
+                        console.log(xhr);
                         break;
                 }
             },
