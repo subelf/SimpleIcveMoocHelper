@@ -36,6 +36,8 @@
 
 - 鸡肋搜题功能(ver 2.15 added)
 
+- 提供考试支持(ver 2.15.4 added)
+
 - ........
 
 ---
@@ -62,10 +64,10 @@
 |            |                                                                                            |                                                                                              |                                                                                            |
 | ---------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | 网站版本   | MOOC [蓝版](https://mooc.icve.com.cn/profile.html)                                         | 职教云  [绿版](https://zjy2.icve.com.cn)                                                     | 智慧职教学习中心[青版](https://www.icve.com.cn/study/)                                     |
-| 测试浏览器 | Chrome                                                                                     | Chrome                                                                                       | Chromium 80(低版本不兼容)                                                                                     |
+| 测试浏览器 | Chrome                                                                                     | Chrome                                                                                       | Chromium 80(低版本不兼容)                                                                  |
 | 已知问题   | 暂无                                                                                       | 无法获知PPT是否完成(iframe跨域)                                                              | 暂无                                                                                       |
 | 源文件     | [bule.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/blue.src.js) | [green.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/green.src.js) | [cyan.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/cyan.src.js) |
-| 版本       | 1.07                                                                                       | 2.15.2(异步处理)                                                                             | 0.2(IndexDB)                                                                               |
+| 版本       | 1.07                                                                                       | 2.15.4(异步处理)                                                                             | 0.2(IndexDB)                                                                               |
 
 ~~大一菜鸡 学习 JS 练手所写, ES5,6 瞎混搭,勿喷~~
 

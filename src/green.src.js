@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版)
-// @version      2.15.2
-// @description  小巧强大的职教云刷课脚本,中文化自定义各项参数,解除作业区复制粘贴限制,一键提取题目,自动评论,智能讨论,鸡肋搜题,软件定制
+// @version      2.15.4
+// @description  小巧强大的职教云刷课脚本,中文化自定义各项参数,解除作业区复制粘贴限制,提供考试支持,一键提取题目,自动评论,智能讨论,鸡肋搜题,软件定制
 // @author        tuChanged
 // @run-at       document-end
 // @grant        unsafeWindow
 // @grant        GM_xmlhttpRequest
-// @match       *.zjy2.icve.com.cn/common/*
+// @match       *://*.zjy2.icve.com.cn/common/*
 // @match       *zjy2.icve.com.cn/common/*
-// @match       *zjy2.icve.com.cn/study/homework*
-// @match       *.zjy2.icve.com.cn/study/homework*
+// @match       *zjy2.icve.com.cn/study/*
+// @match       *://*.zjy2.icve.com.cn/study/*
 // @license      MIT
 // @namespace https://greasyfork.org/users/449085
 // @supportURL https://github.com/W-ChihC/SimpleIcveMoocHelper
@@ -20,8 +20,8 @@
     const setting = {
         // 随机评论,自行扩充格式如     "你好",     (英文符号)
         随机评论词库: ["........",],
-        //感谢@清酒不浊 提醒,策略改变,已只要求点击 
-        激活点即完: true,
+        //感谢@清酒不浊 提醒,策略改变,已只要求点击 (3月14号更新后,已失效)
+        激活点即完: false,
         /*影响刷课速度关键选项,延时非最优解,过慢请自行谨慎调整*/
         最高延迟响应时间: 5000,//毫秒
         最低延迟响应时间: 3000,//毫秒
@@ -93,6 +93,8 @@
             //作业区
             case "/study/homework/preview.html":
             case "/study/homework/do.html":
+            case "/study/onlineExam/preview.html":
+            case "/study/onlineExam/do.html":
                 homeworkHandler()
                 break;
             // default
