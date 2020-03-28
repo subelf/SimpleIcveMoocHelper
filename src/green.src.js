@@ -1,15 +1,13 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版)
-// @version      2.15.4
-// @description  小巧强大的职教云刷课脚本,中文化自定义各项参数,解除作业区复制粘贴限制,提供考试支持,一键提取题目,自动评论,智能讨论,鸡肋搜题,软件定制
+// @version      2.16.0
+// @description  职教云刷课刷题助手脚本,中文化自定义各项参数,解除作业区复制粘贴限制,提供考试支持,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-end
 // @grant        unsafeWindow
 // @grant        GM_xmlhttpRequest
-// @match       *://*.zjy2.icve.com.cn/common/*
-// @match       *zjy2.icve.com.cn/common/*
-// @match       *zjy2.icve.com.cn/study/*
-// @match       *://*.zjy2.icve.com.cn/study/*
+// @match       *://*.zjy2.icve.com.cn/*
+// @match       *zjy2.icve.com.cn/*
 // @license      MIT
 // @namespace https://greasyfork.org/users/449085
 // @supportURL https://github.com/W-ChihC/SimpleIcveMoocHelper
@@ -34,8 +32,6 @@
         视频播放倍速: 2,
         //是否保持静音
         是否保持静音: true,
-        //答题口令码/暗号 获取地址 http://www.lelunwen.com/e/action/ListInfo/?classid=45&tdsourcetag=sxb_365
-        口令码: "2232",
         //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置,默认关闭(false),true为打开
         激活所有选项卡的评论: false,
         激活评论选项卡: false,
@@ -83,7 +79,6 @@
                 await delayExec(async () => {
                     await expandDir();
                     console.log("目录全展开.");
-
                 })
                 await delayExec(() => {
                     locateCurrentLocation()
@@ -315,6 +310,7 @@
             })
         })
     }
+
 
 
 
@@ -585,64 +581,6 @@
         }
         return false
     }
-    /**
-    * 提交讨论
-    */
-    function discussHandler() {
-        setTimeout(() => {
-            //获取上一位的评论  隔两个索引为评论  字数太少往下查找,避免太水
-            let vaildComment = findVaildDiscuss();
-            // //开启HTML输入模式
-            // $EDITORUI["edui945"]._onClick();
-            //填充评论
-            $("iframe#ueditor_0").contents().find("body.view")[0].innerText = vaildComment;
-            //提交
-            delayExec(() => {
-                $(".btn_replyTopic").click();
-                console.log("讨论成功\n");
-            }
-            );
-        }, 10000);
-        /*  //返回上一页
-        delayExec(() => window.history.go(-1)); */
-    }
-
-    /**
-     * 简单地找出一个有效的讨论
-     */
-    function findVaildDiscuss() {
-        let arr = $(".mc-learning-table  tbody tr div[id^='istext_']"), element;
-        for (let i = 0; i < arr.length; i++) {
-            element = arr[i].innerText;
-            if (element.length > 10)
-                return element;
-        }
-        return element;
-    }
-    /**
-    * 提取当前页内容
-    */
-    function exactProblem() {
-        const arr = $(".e-q-body");
-        let text = "";
-
-        for (let x = 0; x < arr.length; x++)
-            text += arr[x].innerText;
-        $("#_content").val(text);
-
-    }
-    /**
-     * 提取题目
-     */
-    function floatHandler() {
-        const div = `<div style="border:#42b983 solid 2px;width: 330px; position: fixed; top: 0; right: 10px;  z-index: 9999">
-                            <button id="extract_btn">提取</button>
-                            <hr/>
-                            <textarea id="_content" style="width: 100%;height: 300px;border: #B3C0D1 solid 2px;overflow: auto;font-size: x-small" />
-                        </div>`;
-        $(div).appendTo('body')
-        $("#extract_btn").bind('click', () => exactProblem())
-    }
 
     /*
     *  解除文本限制
@@ -660,67 +598,69 @@
         uncageCopyLimit()
         bindBtnToQuestion()
     }
+
+    // 重新渲染
+    let reRender = false
+
     /**
- * 将查询按钮按ID调用插入到题目区未位
- */
+     * 将查询按钮按ID调用插入到题目区未位
+    */
     function bindBtnToQuestion() {
         // $(`<button class="qBtn" type="button">🔍</button>`).appendTo(".e-q-quest")
         // $($(".e-a-g")[2]).prev(".e-q-q")
         $(".e-q-quest").each(async (i, e) => {
             $(`<button class="qBtn" x="${i}" type="button">🔍</button>`).appendTo($(e))
         })
+        //去除填空按钮,提高答案匹配
+        $('.fillbox').detach()
+
         //绕过网站全局事件注册
         $(".qBtn").on("click", (event) => {
+            reRender = true
             searchAnswer(event.srcElement.attributes["x"].value)
         })
     }
+    const server = "http://127.0.0.1:5000"
 
-    //上学吧获取 div.main_text 正则
-    const htmPattern = /<div class="main_text">[\s\S]*?<\/div>[\s\D]*?<\/div>/g
-    //页数正则
-    const pagePattern = /Page=(\d{1,5})/
+    /**
+     * 接口对接规范(JSON) 快速通道(/q?q=问题) 更多信息(/q2?q=问题)
+     *  [
+     *   {
+     *    'question': '问题',
+     *    'answer': '答案',
+     *    'options':'题目选项,可留空',
+     *    'msg': '消息,可留空'
+     * },{
+     * 
+     *    }
+     * ]
+     * 
+     */
 
     /**
      * 搜索答案
      * @param {*} i 
      */
-    function searchAnswer(i, q = undefined, page = 1) {
-        console.log(page);
+    function searchAnswer(i) {
 
         // 往前查找同辈元素
-        const question = $($(".qBtn")[i]).prevAll(".e-q-q").text();
-        requestAPI('GET', `https://www.shangxueba.com/ask/search.aspx?Page=${page}&key=${escape(q || question)}`, {
+        const question = $($(".qBtn")[i]).prevAll(".e-q-q").text().trim();
+
+        requestAPI('GET', `${server}/q?q=${question}`, {
             onSuccess: (xhr) => {
-                const src = xhr.response.match(htmPattern)[0];
-                let data = []
-                const htmObj = $(src);
-                htmObj.find(".sousuojieguo li")
-                    .each((i, e) => {
-                        const $e = $(e);
-                        data.push({
-                            href: $e.find("a").first().attr("href"),
-                            title: $e.find(".text_tit").html(),
-                            content: $e.find(".text_content").html()
-                        })
-                    })
-
-                console.log(xhr, htmObj);
-
-                //提取总页数
-                const pageCount = htmObj.find(`a[title="最后页"]`)
-                    .attr("href")
-                    .match(pagePattern)[1];
-
-                showAnswerListDiv(question, page, data, pageCount)
+                const body = JSON.parse(xhr.responseText)
+                showAnswerListDiv(question, body, i)
             }
         })
     }
 
+    // 查看更多答案的锁
+    let nextLock = false
     /**
      * 显示搜索框
      * @param {*} params 
      */
-    function showAnswerListDiv(questionTitle, page, data, pageCount) {
+    function showAnswerListDiv(questionTitle, data, id) {
         if ($("#answerBlock").length == 0) {
             const baseDiv = ` <div id="answerBlock"   style="background: #cccccc8c;max-width:50%; float: right; margin-right: 230px;height:400px;overflow:auto; position: fixed; top: 0; right: 0; z-index: 9999;">
                                     <table border="1" cellspacing="0" align="center" style="font-size: 14px;">
@@ -728,93 +668,130 @@
                                     <thead>
                                         <tr>
                                             <th>标题</th>
-                                            <th>内容</th>
-                                            <th>操作</th>
+                                            <th>填题目📝</th>
+                                            <th>消息</th>
                                         </tr>
                                         <tr>
-                                            <th colspan="3">结果</th>
+                                            <th colspan="2">选项</th>
+                                        </tr>
+                                        <tr>
+                                            <th colspan="2">结果</th>
                                         </tr>
                                     </thead>
-                                    <tbody align="center">
+                                    <tbody align="left">
                                             
                                     </tbody>
                                     <tfoot align="center">
-                                        <tr>
-                                            <td><button type="button" id="nextBtn" >下一页</a></td>
-                                            <td>总页数:<span id="count">${pageCount}</span></td>
-                                        </tr>
-                                    </tfoot>
+                                    <tr>
+                                        <td><button type="button" id="nextBtn" >查找更多</a></td>
+                                    </tr>
+                                </tfoot>
                                 </table>
                             </div>`
             $(baseDiv).appendTo("body")
+            // 初次初始化后关闭
+            reRender = false
+            //允许查看更多
+            nextLock = false
         } else {
-            //更新对应数据
-            $("#answerBlock caption").text(questionTitle)
-            $("#answerBlock #count").text(pageCount)
-            //删除原有的数据
-            $('#answerBlock tbody tr').detach()
+            if (reRender) {
+                //更新对应数据
+                $("#answerBlock caption").text(questionTitle)
+                //删除原有的数据
+                $('#answerBlock tbody tr').detach()
+                // 换题后立即关闭
+                reRender = false
+                //允许查看更多
+                nextLock = false
+            }
         }
         let tbody = "";
-        data.forEach(({ href, title, content }, i) => {
-            tbody += `<tr>
-                        <td><a href="${href}">${title}</a></td>
+        data && data.forEach((item, i) => {
+            if (item != null) {
+                let { question, answer, options, msg } = item
+                const x = rnd(10, 1000000) + i
+                tbody += `
+                    <tr>
+                        <td>${question || ""}</td>
+                        <td><button class="aBtn" aId="${x}" qId=${id} type="button">填入</button></td>
                         <td>
-                            <p>${content}</p>
+                            <p>${(msg && msg.length > 10) ? "" : msg}</p>
                         </td>
-                        <td><button class="viewAnswer" type="button"  x=${i} url="${href}">查看</button></td>
                     </tr>
                     <tr>
-                        <td colspan="3"><textarea id="answerArea${i}" cols="80" rows="2"></textarea></td>
-                    </tr>`});
+                        <td colspan="3">${options || ""}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3"><textarea id=${x} cols="20" rows="2">${answer || ""}</textarea></td>
+                    </tr>
+                    `
+            }
+        });
 
 
         /**
-         * 更新下一页
-         */
-        $("#nextBtn").off("click")
-        $("#nextBtn").on("click", (event) => {
-            searchAnswer(0, questionTitle, page + 1)
-        })
+          * 查看更多
+          */
+        if (!nextLock) {
+            $("#nextBtn").off("click")
+            $("#nextBtn").on("click", (event) => {
+                if (!nextLock)
+                    requestAPI('GET', `${server}/q2?q=${questionTitle}`, {
+                        onSuccess: (xhr) => {
+                            const body = JSON.parse(xhr.responseText)
+                            console.log(body);
+                            showAnswerListDiv(questionTitle, body, id)
+                            //不再允许重复访问
+                            nextLock = true
+                        }
+                    })
+            })
+        }
         /**
          * tbody区
          */
         $(tbody).appendTo("#answerBlock table tbody")
         $('#answerBlock p').css({ margin: '0', wordwrap: 'break-word', maxwidth: '50px' });
         $('#answerBlock em').css({ color: 'red' })
-        //绕过网站全局事件注册答案搜索填充
-        $(".viewAnswer").on("click", (event) => {
-            fillAnswer(event.srcElement.attributes["url"].value, event.srcElement.attributes["x"].value)
+        //绕过网站全局事件注册
+        $(".aBtn").on("click", (event) => {
+            fillAnswer(event.srcElement.attributes["aId"].value, event.srcElement.attributes["qId"].value)
         })
+
     }
-
     /**
-    * 答案填充
-    */
-    function fillAnswer(docURL, i) {
-        search365(docURL, (answer) => {
-            console.log(answer);
-
-            $(`#answerArea${i}`).text(JSON.parse(answer).msg)
-        })
-    }
-
-    /**
-     * 365上学吧破解
-     * @param {*} docURL 上学吧URL
+     * 填题
+     * @param {*} id  答案 ID
      */
-    function search365(docURL, fillMethod) {
-        requestAPI('POST', 'http://www.shangxueba365.com/get.php', {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            data: `docinfo=${docURL}&anhao=${setting.口令码}`,
-            onSuccess: (xhr) => {
-                fillMethod(xhr.responseText)
-            }
-        })
+    function fillAnswer(aID, qId) {
+        //todo 后端: 1,2,3
+        const answer = $(`#${aID}`).val();
+        const qBody = $($(".qBtn")[qId]).parents(".e-q-body");
+        const questionType = qBody.data("questiontype");
+        switch (questionType) {
+            // <!-- 1：单选 2：多选 -->
+            case 1:
+                $(qBody.find(`.e-a-g li:contains('${answer}')`)).click()
+                break;
+            case 2:
+                break;
+            // < !--3：判断题-- >
+            case 3:
+                //默认第一项为正确
+                $(qBody.find(".e-a-g li")[answer == "√" ? 0 : 1]).click()
+                break;
+            // <!-- 4：填空题(主观) 5：填空题(客观) 6 问答-->
+            case 4:
+            case 5:
+                $(qBody.find(".e-a-g input")[0]).val(answer)
+                break;
+            case 6:
+                $(qBody.find("textarea")[0]).val(answer)
+                break;
+            default:
+                break;
+        }
     }
-
-
 
     /**
     * 对XHR的二次全局封装,方便后期扩展
@@ -838,12 +815,13 @@
                         onSuccess(xhr)
                         break;
                     default:
+                        alert(xhr)
                         console.log(xhr);
                         break;
                 }
             },
             ontimeout: function () {
-                console.log("响应超时");
+                alert("响应超时")
             }
         });
     }
