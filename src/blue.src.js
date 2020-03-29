@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         智慧职教网课助手 蓝版
-// @version      1.07
+// @version      1.08
 // @description  智慧职教简易自动刷课脚本
 // @author        tuChanged
 // @run-at       document-end
@@ -12,6 +12,8 @@
     const setting = {
         // 随机评论
         randomComment: ["6666", "好", "讲解得很精辟"],
+        //是否启用评论,
+        isOpenComment: false,
         //最高延迟
         maxDelayTime: 5000,
         //最低3秒
@@ -218,19 +220,25 @@
     * 提交评论
     */
     function commentHandler(current) {
-        //评5星
-        $("#star #starImg4").click();
-        //随机从词库填写评论
-        $("iframe#ueditor_0").contents().find("body.view")[0].innerText = setting.randomComment[rnd(0, setting.randomComment.length - 1)];
-        //提交
-        delayExec(() => {
-            $("#btnComment").click();
+
+        if (isOpenComment) {
+            //评5星
+            $("#star #starImg4").click();
+            //随机从词库填写评论
+            $("iframe#ueditor_0").contents().find("body.view")[0].innerText = setting.randomComment[rnd(0, setting.randomComment.length - 1)];
+            //提交
             delayExec(() => {
-                $(".sgBtn.ok").click();
-                console.log("评论成功\n");
-                check(current);
+                $("#btnComment").click();
+                delayExec(() => {
+                    $(".sgBtn.ok").click();
+                    console.log("评论成功\n");
+                    check(current);
+                });
             });
-        });
+        } else {
+            check(current);
+        }
+
     }
     /**
     * 提交讨论

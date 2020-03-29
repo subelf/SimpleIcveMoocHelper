@@ -69,8 +69,13 @@
     // let nextCourse = () => $(".next").click();
     const lessonID = getQueryValue("cellId")
     console.log(`当前课程ID: ${lessonID}`);
+
     //脚本处理入口函数,仅运行一次
     delayExec(async () => {
+
+        //出现弹窗时点击下一步
+        $(".ui-dialog").find("#studyNow").click()
+
         //入口
         switch (url) {
             //课件区
