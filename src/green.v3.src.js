@@ -117,7 +117,7 @@ delayExec(() => {
     // 拦截发出的请求
     XMLHttpRequest.prototype.send = function (data) {
         // 学生课件状态检查
-        if (data.indexOf("studyNewlyTime") >= 0) {
+        if (data && data.indexOf("studyNewlyTime") >= 0) {
             const readedNum = parseInt(getQueryValue("studyNewlyPicNum", "?" + data));
             const readedTime = parseFloat(getQueryValue("studyNewlyTime", "?" + data));
             console.log(`文档同步进度:${readedNum}/${pageCount}`, `视频同步进度:${readedTime}/${mediaLong}`);
@@ -222,7 +222,7 @@ async function requestMatcher(url, data, that) {
                 const localS = sessionStorage.getItem(classId);
                 //未在本地找到遗留数据则重新获取
                 if (!localS || localS == "[]") {
-                    if (!confirm("正在获取未完成小节数据,为避免检测,请耐心等待,确定以继续,否则结束工作"))
+                    if (!confirm("正在获取未完成小节数据,为避免检测,请耐心等待,点确定以继续,确认后勿关闭本页,直到再次弹窗,方会启动努力学习,否则脚本结束工作"))
                         return
                     const parentNode = data && data.progress;
                     //过滤已经学习完的课件
