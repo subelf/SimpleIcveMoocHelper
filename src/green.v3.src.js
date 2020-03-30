@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.1.0
+// @version      3.1.1
 // @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -239,27 +239,27 @@ async function requestMatcher(url, data, that) {
                     for (const item of list) {
                         for (const i of item.topics) {
                             // 最终需要处理的数据
-                            console.log(item);
                             const cellList = (await sendIcveRequest(urls.process_getCellByTopicId, { courseOpenId: cid, openClassId: oid, topicId: i.id })).cellList
-
-                            console.log(cellList);
-
                             cellList && cellList.forEach(item => {
                                 const childList = item.childNodeList;
                                 if (childList && childList.length !== 0) {
-                                    const childVaildList = childList.filter(i => i.stuCellFourPercent !== 100);
+                                    const childVaildList = childList.filter(i => i.stuCellFourPercent !== 100 && i.cellType !== 4);
+                                    console.log(item);
                                     finalData.push(...childVaildList)
-                                } else if (item.stuCellPercent !== 100) {
+                                } else if (item.stuCellPercent !== 100 && item.cellType !== 4) {
+                                    console.log(item);
                                     finalData.push(item)
                                 }
                             })
                         }
                     }
+
+
                     console.log(`已成功缓存${finalData.length}条未完成小节信息`);
                     sessionStorage.setItem(classId, JSON.stringify(finalData))
                 }
                 const data_ = JSON.parse(sessionStorage.getItem(classId))
-
+                console.log(data_);
                 if (confirm(`✅已初始化完成,发现${data_.length}个课件未完成,是否立即启动不知疲倦学习🙇🏼‍♂️📚模式`))
                     goPage(null, data_[0])
             }
