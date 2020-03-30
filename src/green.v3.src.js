@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.1.1
+// @version      3.1.2
 // @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -244,7 +244,7 @@ async function requestMatcher(url, data, that) {
                                 const childList = item.childNodeList;
                                 if (childList && childList.length !== 0) {
                                     const childVaildList = childList.filter(i => i.stuCellFourPercent !== 100 && i.cellType !== 4);
-                                    console.log(item);
+                                    console.log(childVaildList);
                                     finalData.push(...childVaildList)
                                 } else if (item.stuCellPercent !== 100 && item.cellType !== 4) {
                                     console.log(item);
