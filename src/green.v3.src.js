@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.0
-// @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,解除作业区复制粘贴限制,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
+// @version      3.1.0
+// @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
 // @grant        unsafeWindow
 // @grant        GM_xmlhttpRequest
+// @grant        GM_registerMenuCommand
 // @match       *://*.zjy2.icve.com.cn/*
 // @match       *zjy2.icve.com.cn/*
 // @license      MIT
@@ -19,6 +20,8 @@ const setting = {
     自定义题库服务器: "",// 协议://IP
     // 随机评论,自行扩充格式如     "你好",     (英文符号)
     随机评论词库: ["........", ".", "/n",],
+    //是否打开课件下载
+    打开课件下载: true,
     // 保证文档类与网站请求保持同步,因此速度较慢,实测可以不用这么严格,默认打开
     保险模式: true,
     /*影响刷课速度关键选项,延时非最优解,过慢请自行谨慎调整*/
@@ -45,7 +48,6 @@ const setting = {
     *    价格从优,源码调试成功再付款💰,
     *     实力保证,包远程,包讲解 QQ:2622321887
     */
-
 }, top = unsafeWindow,
     url = location.pathname
 //产生区间随机数
@@ -58,6 +60,7 @@ const isTabsFinished = [false, false, false, false]
 let pageCount, mediaLong, cellType, startTime
 //课件是否已完成
 let isFinshed = false;
+
 //定时任务栈
 const taskStack = []
 /**
@@ -76,12 +79,27 @@ async function delayExec(func, fixedDelay = null) {
         ));
     }))()
 }
-// 一页页面加载后的工作,第一启动优先级
-delayExec(() => {
+function autoCloseDialog() {
     const $dialog = $(".ui-dialog");
     //关闭限制弹窗
     if ($dialog.length > 0)
         $dialog.find("#studyNow").click()
+}
+
+GM_registerMenuCommand("重新获取未完成小节", function () {
+    sessionStorage.clear()
+    goPage("p")
+});
+
+GM_registerMenuCommand("问题反馈", function () {
+    top.open("https://github.com/W-ChihC/SimpleIcveMoocHelper/issues")
+});
+GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
+    top.open("https://greasyfork.org/zh-CN/users/449085")
+});
+// 一页页面加载后的工作,第一启动优先级
+delayExec(() => {
+    autoCloseDialog()
     //匹配不需要监听网络的URL
     switch (url) {
         //作业区
@@ -108,14 +126,15 @@ delayExec(() => {
             if (!readedTime && !startTime)
                 startTime = $.now()
             // 判断当前课件是否已结束
-            if (pageCount === readedNum || (mediaLong != 0 && readedTime != 0 && (mediaLong === readedTime))) {
+            if ((readedNum && pageCount && (readedNum >= pageCount)) || (mediaLong && readedTime && (readedTime >= mediaLong))) {
                 isFinshed = true
                 const endTime = $.now()
-
                 // 应对检测需停留 10 秒
                 if (endTime - startTime >= 10000) {
                     commentHandler()
+                    return
                 }
+                console.log(`未满足职教云课件完成检测 10 秒要求,继续等待中${endTime - startTime}ms`);
             } else if (setting.保险模式) {
                 pageCount && console.log(`文档类🔐模式:${readedNum}/${pageCount}`);
                 const pptNext = $(".stage-next"), docNext = $(".MPreview-pageNext");
@@ -129,7 +148,7 @@ delayExec(() => {
     XMLHttpRequest.prototype.open = function () {
         this.addEventListener("readystatechange", () => {
             if (this.readyState >= 4)
-                requestMatcher(this.responseURL, JSON.parse(this.responseText))
+                requestMatcher(this.responseURL, JSON.parse(this.responseText), this)
         }, false);
         open.apply(this, arguments);
     };
@@ -137,16 +156,17 @@ delayExec(() => {
 /**
  * 请求匹配器,任务调度中心
  */
-async function requestMatcher(url, data) {
+async function requestMatcher(url, data, that) {
+    autoCloseDialog()
     switch (url) {
         // 评论
         case String(url.match(/.*getCellCommentData$/)):
             {
-                const userId = localStorage.getItem("userId");
+                const userId = sessionStorage.getItem("userId");
                 const item = data.list && data.list.find(item => item.userId === userId);
                 if (item) {
                     // 评论已完成
-                    console.log(item);
+                    console.log("我的评论: ", item);
                     isTabsFinished[data.type - 1] = true
                 }
             }
@@ -157,6 +177,25 @@ async function requestMatcher(url, data) {
                 if (setting.激活仅评论并关闭刷课) {
                     commentHandler()
                     return
+                }
+
+                if (setting.打开课件下载) {
+                    // 破解课件下载 todo
+                    data.isAllowDownLoad = true
+                    data.isDownLoad = true
+                    console.log("当前课件下载地址:", data.downLoadUrl);
+                    // 修改服务器返回数据
+                    if (!that._responseText) {
+                        Object.defineProperty(that, 'responseText', {
+                            get: () => that['_responseText'] === undefined ? that.responseText : that['_responseText'],
+                            set: (val) => {
+                                that['_responseText'] = val
+                            },
+                            enumerable: true
+                        });
+                    }
+                    //修改响应数据 
+                    that._responseText = JSON.stringify(data)
                 }
                 // 课件页数
                 pageCount = data.pageCount
@@ -173,17 +212,18 @@ async function requestMatcher(url, data) {
                     nextCell()
                     return
                 }
+                console.log("当前课件: ", data);
                 cellHandlerMatcher()
-                console.log(data);
             }
             break;
         // 课程章节目录
         case String(url.match(/.*getProcessList$/)):
             {
-                const localS = localStorage.getItem(classId);
+                const localS = sessionStorage.getItem(classId);
                 //未在本地找到遗留数据则重新获取
                 if (!localS || localS == "[]") {
-                    console.log("正在获取未完成小节数据,为避免检测,请耐心等待");
+                    if (!confirm("正在获取未完成小节数据,为避免检测,请耐心等待,确定以继续,否则结束工作"))
+                        return
                     const parentNode = data && data.progress;
                     //过滤已经学习完的课件
                     const dirs = parentNode && parentNode.moduleList.filter(item => item.percent !== 100)
@@ -216,9 +256,9 @@ async function requestMatcher(url, data) {
                         }
                     }
                     console.log(`已成功缓存${finalData.length}条未完成小节信息`);
-                    localStorage.setItem(classId, JSON.stringify(finalData))
+                    sessionStorage.setItem(classId, JSON.stringify(finalData))
                 }
-                const data_ = JSON.parse(localStorage.getItem(classId))
+                const data_ = JSON.parse(sessionStorage.getItem(classId))
 
                 if (confirm(`✅已初始化完成,发现${data_.length}个课件未完成,是否立即启动不知疲倦学习🙇🏼‍♂️📚模式`))
                     goPage(null, data_[0])
@@ -226,7 +266,7 @@ async function requestMatcher(url, data) {
             break;
         default:
             if (data && data.msg && data.msg.indexOf("操作成功") < 0)
-                console.log("无任务可分配");
+                console.log("无任务可分配", data);
             break;
     }
 }
@@ -234,14 +274,22 @@ async function requestMatcher(url, data) {
  * 查找下一个课件,并在本地缓存更新相应信息
  */
 function nextCell() {
-    const data = JSON.parse(localStorage.getItem(classId));
-    const surplusData = data.filter(item => item.Id !== cellID);
-    localStorage.setItem(classId, JSON.stringify(surplusData))
+    const data = JSON.parse(sessionStorage.getItem(classId));
+    if (!data) {
+        if (confirm("🆇未从缓存中检测到课程数据,是否进入正常运行流程")) {
+            location.href =
+                goPage("p")
+            return
+        }
+    }
+    const surplusData = data && data.filter(item => item.Id !== cellID);
+    sessionStorage.setItem(classId, JSON.stringify(surplusData))
 
     if (surplusData.length === 0) {
         alert("课程已完成")
         return
     }
+
 
     goPage(null, surplusData.pop())
 }
@@ -250,8 +298,13 @@ function nextCell() {
  * 跳转到某页面
  */
 function goPage(url, data = undefined) {
-    const newPage = `${location.origin}/common/directory/directory.html?courseOpenId=${data.courseOpenId}&openClassId=${classId}&cellId=${data.Id}&flag=${data.flag || "s"}&moduleId=${data.parentId}`;
-    console.log(newPage);
+    let newPage;
+    if (!url) {
+        newPage = `${location.origin}/common/directory/directory.html?courseOpenId=${data.courseOpenId}&openClassId=${classId}&cellId=${data.Id}&flag=${data.flag || "s"}&moduleId=${data.parentId}`;
+        console.log("下一个课件: ", newPage);
+    } else {
+        newPage = `${location.origin}/study/process/process.html?courseOpenId=${getQueryValue("courseOpenId")}&openClassId=${getQueryValue("openClassId")}`
+    }
     top.location.href = newPage
 }
 
@@ -306,7 +359,7 @@ function cellHandlerMatcher() {
             emptyHandler()
             break;
         default:
-            console.log(`课件 : ${cellType} 未提供兼容, ${setting.未做兼容课件打开评论 ? '已开启兼容评论,仅运行评论' : '已跳过处理'},请在github issue(https://github.com/W-ChihC/SimpleIcveMoocHelper)反馈该日志,与作者取得联系`);
+            console.log(`课件 : ${cellType} 未提供兼容, ${setting.未做兼容课件打开评论 ? '已开启兼容评论,仅运行评论' : '已跳过处理'},请在github issue  (https://github.com/W-ChihC/SimpleIcveMoocHelper)  反馈该日志,与作者取得联系`);
             break
     }
 }
@@ -458,10 +511,7 @@ async function submitQuestion() {
                 resolve()
             });
         }, 60000);
-
     })
-
-
 }
 /**
  * 笔记
@@ -494,7 +544,6 @@ async function submitReport() {
         $($(".am-tabs-nav>li a")[3]).click()
     })
     return new Promise(async (resolve, reject) => {
-
         //随机从词库填写评论
         $(".cellErrorContent").text(setting.随机评论词库[rnd(0, setting.随机评论词库.length - 1)])
         //提交
@@ -528,6 +577,9 @@ function uncageCopyLimit() {
 */
 function homeworkHandler() {
     uncageCopyLimit()
+    if (!setting.自定义题库服务器) {
+        alert("未填写题库📝,无法正常使用答题,仅提供破解网站限制")
+    }
     bindBtnToQuestion()
 }
 

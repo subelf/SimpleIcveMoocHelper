@@ -44,7 +44,24 @@
 
 - 蓝版添加众望所归的是否开启自动评论 (ver 1.08 added)
 
+- 提供课件下载功能(ver 3.1 added)
+
 - ........
+
+```js
+接口对接规范(JSON) 请求方式 GET
+    //快速通道(/q?q=问题)
+    //更多信息(/q2?q=问题)
+[{
+     'question': '问题,可留空',
+     'answer': '答案', //判断题 √为正确,其余为错误
+     'options':'题目选项,可留空',
+     'msg': '消息,可留空'
+  },{
+  
+     }
+  ]
+```
 
 ---
 
@@ -71,9 +88,9 @@
 | ---------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | 网站版本   | MOOC [蓝版](https://mooc.icve.com.cn/profile.html)                                         | 职教云  [绿版](https://zjy2.icve.com.cn)                                                        | 智慧职教学习中心[青版](https://www.icve.com.cn/study/)                                     |
 | 测试浏览器 | Chrome                                                                                     | Chrome                                                                                          | Chromium 80(低版本不兼容)                                                                  |
-| 已知问题   | 暂无                                                                                       | 无法获知PPT是否完成(iframe跨域)                                                                 | 暂无                                                                                       |
+| 已知问题   | 暂无                                                                                       | 暂无                                                                                            | 暂无                                                                                       |
 | 源文件     | [bule.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/blue.src.js) | [green.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/green.v3.src.js) | [cyan.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/cyan.src.js) |
-| 版本       | 1.08                                                                                       | 3.0                                                                                             | 0.2(IndexDB)                                                                               |
+| 版本       | 1.08                                                                                       | 3.1                                                                                             | 0.2(IndexDB)                                                                               |
 
 ~~大一菜鸡 学习 JS 练手所写, ES5,6 瞎混搭,勿喷~~
 
