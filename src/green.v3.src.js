@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.2.1
+// @version      3.2.2
 // @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -14,6 +14,7 @@
 // @supportURL https://github.com/W-ChihC/SimpleIcveMoocHelper
 // @contributionURL https://greasyfork.org/users/449085
 // ==/UserScript==
+/*jshint esversion:6 */
 'use strict'
 const setting = {
     // 题库 IP地址 ,可在553行查看对接接口要求
@@ -24,6 +25,8 @@ const setting = {
     打开课件下载: true,
     // 保证文档类与网站请求保持同步,因此速度较慢,实测可以不用这么严格,默认打开
     保险模式: true,//如果课件始终不跳下一个,请勿打开该项
+    // 部分课件存在无检测机制问题,会尝试自动关闭保险模式
+    自动关闭保险模式: true,
     /*影响刷课速度关键选项,延时非最优解,过慢请自行谨慎调整*/
     最高延迟响应时间: 5000,//毫秒
     最低延迟响应时间: 3000,//毫秒
@@ -56,7 +59,7 @@ const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 const classId = getQueryValue("openClassId")
 const cellID = getQueryValue("cellId")
 // 课件完成相关判定数据
-let pageCount, mediaLong, cellType, startTime
+let pageCount, mediaLong, cellType, startTime, lastArchiveCount
 //课件是否已完成
 let isFinshed = false;
 // 评论标志位
@@ -117,6 +120,7 @@ delayExec(() => {
     console.log(`脚本已启动 当前位置:${url}`);
 }, setting.组件等待时间);
 let lastNum = 10;
+let currentCellData = "";
 // 全局请求拦截器
 (function (open, send) {
 
@@ -124,22 +128,28 @@ let lastNum = 10;
     XMLHttpRequest.prototype.send = function (data) {
         // 学生课件状态检查
         if (data && data.indexOf("studyNewlyTime") >= 0) {
-
             if (!setting.激活仅评论并关闭刷课件) {
                 const readedNum = parseInt(getQueryValue("studyNewlyPicNum", "?" + data));
                 // 四舍五入留 两位与服务器计时同步
                 const readedTime = Math.round(parseFloat(getQueryValue("studyNewlyTime", "?" + data)) * 100) / 100;
-                console.log(`文档同步进度:${readedNum}/${pageCount}`, `视频同步进度:${readedTime}/${mediaLong}`);
-
-                // 某些课件未被检测
-                lastNum = readedNum && readedNum
-                if (lastNum === 0 && setting.保险模式) {
-                    console.log("失败");
-                    return
-                }
                 // 非媒体课件下启动
                 if (!readedTime && !startTime)
                     startTime = $.now()
+                // 纠正空课件监控问题
+                if (pageCount === 1)
+                    readedNum = 1
+                console.log(`文档同步进度:${readedNum}/${pageCount}`, `视频同步进度:${readedTime}/${mediaLong}`);
+                // 某些课件未被检测
+                lastNum = readedNum && readedNum
+                if (lastNum === 0 && setting.保险模式) {
+                    console.log("保险模式启动失败,已尝试关闭");
+                    if (setting.自动关闭保险模式) {
+                        setting.保险模式 = false
+                        requestMatcher("viewDirectory", currentCellData)
+                    }
+                    return
+                }
+
                 // 判断当前课件是否已结束
                 if ((readedNum && pageCount && (readedNum >= pageCount)) || (mediaLong && readedTime && (readedTime >= mediaLong))) {
                     isFinshed = true
@@ -259,7 +269,7 @@ async function requestMatcher(url, data, that) {
                     return
                 }
 
-                if (setting.打开课件下载) {
+                if (!currentCellData && setting.打开课件下载) {
                     // 破解课件下载 todo
                     data.isAllowDownLoad = true
                     data.isDownLoad = true
@@ -292,6 +302,7 @@ async function requestMatcher(url, data, that) {
                     nextCell()
                     return
                 }
+                currentCellData = data
                 console.log("当前课件: ", data);
                 cellHandlerMatcher()
             }
@@ -437,13 +448,13 @@ function cellHandlerMatcher() {
             case "office文档":
             case "pdf文档":
             case "其它":
+            case "ppt文档":
                 if (!setting.保险模式)
                     delayExec(() => {
                         docHandler()
                     })
                 break;
             case "ppt":
-            case "ppt文档":
                 if (!setting.保险模式)
                     delayExec(() => {
                         pptHandler()
@@ -514,6 +525,26 @@ function mediaHandler() {
         console.log("媒体已暂停,恢复播放");
         player.play()
     }
+    //播放原已完成
+    if (player.getState() == "complete") {
+        console.log("媒体播放已完成");
+        // 评论任务均已完成则跳转
+        if (isUnFinishedTabs.indexOf(true) === -1) {
+            nextCell()
+            return
+        }
+        return
+    }
+    //播放回调
+    player.on("playlistComplete", () => {
+        console.log("媒体播放完成");
+        // 评论任务均已完成则跳转
+        if (isUnFinishedTabs.indexOf(true) === -1) {
+            nextCell()
+            return
+        }
+    })
+
     //配置
     player.setMute(setting.是否保持静音)//静音
     player.setCurrentQuality(setting.视频清晰度)
