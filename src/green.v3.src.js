@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.1.2
+// @version      3.2.1
 // @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -23,7 +23,7 @@ const setting = {
     //是否打开课件下载
     打开课件下载: true,
     // 保证文档类与网站请求保持同步,因此速度较慢,实测可以不用这么严格,默认打开
-    保险模式: true,
+    保险模式: true,//如果课件始终不跳下一个,请勿打开该项
     /*影响刷课速度关键选项,延时非最优解,过慢请自行谨慎调整*/
     最高延迟响应时间: 5000,//毫秒
     最低延迟响应时间: 3000,//毫秒
@@ -43,6 +43,7 @@ const setting = {
     激活问答选项卡: false,
     激活笔记选项卡: false,
     激活报错选项卡: false,
+
     /*
     * 📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,
     *    价格从优,源码调试成功再付款💰,
@@ -54,30 +55,33 @@ const setting = {
 const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 const classId = getQueryValue("openClassId")
 const cellID = getQueryValue("cellId")
-// 评论项标志位
-const isTabsFinished = [false, false, false, false]
 // 课件完成相关判定数据
 let pageCount, mediaLong, cellType, startTime
 //课件是否已完成
 let isFinshed = false;
+// 评论标志位
+const isUnFinishedTabs = [setting.激活所有选项卡的评论 || setting.激活评论选项卡, setting.激活所有选项卡的评论 || setting.激活笔记选项卡, setting.激活所有选项卡的评论 || setting.激活问答选项卡, setting.激活所有选项卡的评论 || setting.激活报错选项卡]
 
 //定时任务栈
-const taskStack = []
+let taskStack = 0
 /**
  * 使用异步包装
  *  随机延迟执行方法
  * @param {需委托执行的函数} func
  */
 async function delayExec(func, fixedDelay = null) {
-    taskStack.push(func)
-    return (await new Promise((resolve, reject) => {
+    // taskStack.push(func)
+    taskStack++
+    const newTask = new Promise((resolve, reject) => {
+        const newTime = rnd(fixedDelay || (setting.最低延迟响应时间) * (taskStack / 3), fixedDelay || (setting.最高延迟响应时间) * (taskStack / 2.5));
         setTimeout(() => {
-            resolve(taskStack.pop())
-        }, rnd(
-            fixedDelay || (setting.最低延迟响应时间) * (taskStack.length / 3),
-            fixedDelay || (setting.最高延迟响应时间) * (taskStack.length / 2.5)
-        ));
-    }))()
+            resolve(func())
+            taskStack--
+            console.log(`已完成延时${newTime}ms的任务,待执行任务总计:${taskStack}`);
+        }, newTime);
+        console.log(`新增任务,等待时间${newTime}ms,待执行任务总计:${taskStack}`);
+    });
+    return newTask
 }
 function autoCloseDialog() {
     const $dialog = $(".ui-dialog");
@@ -97,7 +101,7 @@ GM_registerMenuCommand("问题反馈", function () {
 GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
     top.open("https://greasyfork.org/zh-CN/users/449085")
 });
-// 一页页面加载后的工作,第一启动优先级
+// 一页页面加载后的工作
 delayExec(() => {
     autoCloseDialog()
     //匹配不需要监听网络的URL
@@ -111,39 +115,61 @@ delayExec(() => {
             break;
     }
     console.log(`脚本已启动 当前位置:${url}`);
-}, setting.Jquery等待时间);
+}, setting.组件等待时间);
+let lastNum = 10;
 // 全局请求拦截器
 (function (open, send) {
+
     // 拦截发出的请求
     XMLHttpRequest.prototype.send = function (data) {
         // 学生课件状态检查
         if (data && data.indexOf("studyNewlyTime") >= 0) {
-            const readedNum = parseInt(getQueryValue("studyNewlyPicNum", "?" + data));
-            const readedTime = parseFloat(getQueryValue("studyNewlyTime", "?" + data));
-            console.log(`文档同步进度:${readedNum}/${pageCount}`, `视频同步进度:${readedTime}/${mediaLong}`);
 
-            // 非媒体课件下启动
-            if (!readedTime && !startTime)
-                startTime = $.now()
-            // 判断当前课件是否已结束
-            if ((readedNum && pageCount && (readedNum >= pageCount)) || (mediaLong && readedTime && (readedTime >= mediaLong))) {
-                isFinshed = true
-                const endTime = $.now()
-                // 应对检测需停留 10 秒
-                if (endTime - startTime >= 10000) {
-                    commentHandler()
+            if (!setting.激活仅评论并关闭刷课件) {
+                const readedNum = parseInt(getQueryValue("studyNewlyPicNum", "?" + data));
+                // 四舍五入留 两位与服务器计时同步
+                const readedTime = Math.round(parseFloat(getQueryValue("studyNewlyTime", "?" + data)) * 100) / 100;
+                console.log(`文档同步进度:${readedNum}/${pageCount}`, `视频同步进度:${readedTime}/${mediaLong}`);
+
+                // 某些课件未被检测
+                lastNum = readedNum && readedNum
+                if (lastNum === 0 && setting.保险模式) {
+                    console.log("失败");
                     return
                 }
-                console.log(`未满足职教云课件完成检测 10 秒要求,继续等待中${endTime - startTime}ms`);
-            } else if (setting.保险模式) {
-                pageCount && console.log(`文档类🔐模式:${readedNum}/${pageCount}`);
-                const pptNext = $(".stage-next"), docNext = $(".MPreview-pageNext");
-                pptNext && pptNext.click()
-                docNext && docNext.click()
+                // 非媒体课件下启动
+                if (!readedTime && !startTime)
+                    startTime = $.now()
+                // 判断当前课件是否已结束
+                if ((readedNum && pageCount && (readedNum >= pageCount)) || (mediaLong && readedTime && (readedTime >= mediaLong))) {
+                    isFinshed = true
+                    const endTime = $.now()
+                    // 应对检测需停留 10 秒
+                    if (endTime - (startTime || 0) >= 10000) {
+                        // 评论任务均已完成则跳转
+                        if (isUnFinishedTabs.indexOf(true) === -1) {
+                            nextCell()
+                            return
+                        }
+                    }
+                    console.log(`未满足职教云课件完成检测 10 秒要求,继续等待中,已等待:${endTime - startTime}ms`);
+                } else if (setting.保险模式) {
+                    pageCount && console.log(`文档类🔐模式:${readedNum}/${pageCount}`);
+                    const pptNext = $(".stage-next"), docNext = $(".MPreview-pageNext");
+                    pptNext && pptNext.click()
+                    docNext && docNext.click()
+                }
+            } else {
+                // 评论任务均已完成则跳转
+                if (isUnFinishedTabs.indexOf(true) === -1) {
+                    nextCell()
+                    return
+                }
             }
         }
         send.apply(this, arguments);
     };
+
     // 拦截数据响应
     XMLHttpRequest.prototype.open = function () {
         this.addEventListener("readystatechange", () => {
@@ -153,6 +179,7 @@ delayExec(() => {
         open.apply(this, arguments);
     };
 })(XMLHttpRequest.prototype.open, XMLHttpRequest.prototype.send);
+
 /**
  * 请求匹配器,任务调度中心
  */
@@ -161,21 +188,74 @@ async function requestMatcher(url, data, that) {
     switch (url) {
         // 评论
         case String(url.match(/.*getCellCommentData$/)):
-            {
-                const userId = sessionStorage.getItem("userId");
+
+            if (isUnFinishedTabs[0] || isUnFinishedTabs[1] || isUnFinishedTabs[2] || isUnFinishedTabs[3] || setting.激活所有选项卡的评论) {
+                const userId = localStorage.getItem("userId");
                 const item = data.list && data.list.find(item => item.userId === userId);
-                if (item) {
-                    // 评论已完成
-                    console.log("我的评论: ", item);
-                    isTabsFinished[data.type - 1] = true
+                // 评论已完成
+                console.log("我的评论: ", item);
+
+                switch (data.type) {
+                    case 1: {
+                        if (setting.激活评论选项卡 || setting.激活所有选项卡的评论) {
+                            if (!item) {
+                                await submitComment()
+                                console.log("已完成评论提交");
+                            }
+                            isUnFinishedTabs[data.type - 1] = false
+                        }
+                    }
+                        break;
+                    case 2:
+                        {
+                            if (setting.激活笔记选项卡 || setting.激活所有选项卡的评论) {
+                                if (!item) {
+                                    await submitNote()
+                                    console.log("已完成笔记提交");
+                                }
+                                isUnFinishedTabs[data.type] = false
+                            }
+
+                        }
+                        break;
+                    case 3:
+                        {
+                            if (setting.激活问答选项卡 || setting.激活所有选项卡的评论) {
+                                if (!item) {
+                                    await submitQuestion()
+                                    console.log("已完成问答提交");
+                                }
+                                isUnFinishedTabs[data.type - 2] = false
+                            }
+                        }
+                        break;
+                    case 4:
+                        {
+                            if (setting.激活报错选项卡 || setting.激活所有选项卡的评论) {
+                                if (!item) {
+                                    await submitReport()
+                                    console.log("已完成报错提交");
+                                }
+                                isUnFinishedTabs[data.type - 1] = false
+                            }
+                        }
+                        break;
+                }
+
+                const tab = isUnFinishedTabs.indexOf(true);
+                if (tab > -1 && tab + 2 !== data.type) {
+                    await delayExec(() => {
+                        $($(".am-tabs-nav>li a")[tab]).click()
+                    })
                 }
             }
             break;
         // 载入课件
         case String(url.match(/.*viewDirectory|loadCellResource$/)):
             {
-                if (setting.激活仅评论并关闭刷课) {
-                    commentHandler()
+                if (setting.激活仅评论并关闭刷课件) {
+                    console.log("仅开启评论已打开");
+                    // commentHandler()
                     return
                 }
 
@@ -226,7 +306,9 @@ async function requestMatcher(url, data, that) {
                         return
                     const parentNode = data && data.progress;
                     //过滤已经学习完的课件
-                    const dirs = parentNode && parentNode.moduleList.filter(item => item.percent !== 100)
+                    let dirs = parentNode && parentNode.moduleList.filter(item => item.percent !== 100)
+                    if (setting.激活仅评论并关闭刷课件)
+                        dirs = parentNode.moduleList
                     //请求课程所有数据
                     const orginalData = (await sendIcveRequest(urls2.courseView_getCourseDetailList)).courseProcessInfo
                     //过滤掉已完成的章节
@@ -243,12 +325,23 @@ async function requestMatcher(url, data, that) {
                             cellList && cellList.forEach(item => {
                                 const childList = item.childNodeList;
                                 if (childList && childList.length !== 0) {
-                                    const childVaildList = childList.filter(i => i.stuCellFourPercent !== 100 && i.cellType !== 4);
+                                    const childVaildList = childList.filter(i => {
+                                        if (i.cellType !== 4) {
+                                            if (setting.激活仅评论并关闭刷课件)
+                                                return true
+                                            if (i.stuCellFourPercent !== 100)
+                                                return true
+                                        }
+                                        return false
+                                    });
                                     console.log(childVaildList);
                                     finalData.push(...childVaildList)
-                                } else if (item.stuCellPercent !== 100 && item.cellType !== 4) {
+                                } else if (item.cellType !== 4) {
+                                    if (setting.激活仅评论并关闭刷课件)
+                                        finalData.push(item)
+                                    else if (item.stuCellPercent !== 100)
+                                        finalData.push(item)
                                     console.log(item);
-                                    finalData.push(item)
                                 }
                             })
                         }
@@ -265,8 +358,9 @@ async function requestMatcher(url, data, that) {
             }
             break;
         default:
-            if (data && data.msg && data.msg.indexOf("操作成功") < 0)
+            if (data && data.msg && data.msg.indexOf("操作成功") < 0) {
                 console.log("无任务可分配", data);
+            }
             break;
     }
 }
@@ -274,6 +368,7 @@ async function requestMatcher(url, data, that) {
  * 查找下一个课件,并在本地缓存更新相应信息
  */
 function nextCell() {
+    // debugger
     const data = JSON.parse(sessionStorage.getItem(classId));
     if (!data) {
         if (confirm("🆇未从缓存中检测到课程数据,是否进入正常运行流程")) {
@@ -290,8 +385,11 @@ function nextCell() {
         return
     }
 
+    console.log("当前课件任务已完成----");
 
-    goPage(null, surplusData.pop())
+    delayExec(() => {
+        goPage(null, surplusData.pop())
+    })
 }
 
 /**
@@ -331,37 +429,43 @@ function sendIcveRequest(url, data = {}) {
  * 课件匹配处理调度
  */
 function cellHandlerMatcher() {
-    switch (cellType) {
-        case "图片":
-        case "文档":
-        case "excel文档":
-        case "office文档":
-        case "pdf文档":
-            if (!setting.保险模式)
-                docHandler()
-            break;
-        case "ppt":
-        case "ppt文档":
-            if (!setting.保险模式)
-                pptHandler()
-            break;
-        case "swf":
-            swfHandler()
-            break;
-        case "视频":
-        case "音频":
-            delayExec(() => {
-                mediaHandler()
-            }, setting.Jquery等待时间)
-            break;
-        case "图文":
-        case "压缩包":
-            emptyHandler()
-            break;
-        default:
-            console.log(`课件 : ${cellType} 未提供兼容, ${setting.未做兼容课件打开评论 ? '已开启兼容评论,仅运行评论' : '已跳过处理'},请在github issue  (https://github.com/W-ChihC/SimpleIcveMoocHelper)  反馈该日志,与作者取得联系`);
-            break
-    }
+    if (!setting.激活仅评论并关闭刷课件)
+        switch (cellType) {
+            case "图片":
+            case "文档":
+            case "excel文档":
+            case "office文档":
+            case "pdf文档":
+            case "其它":
+                if (!setting.保险模式)
+                    delayExec(() => {
+                        docHandler()
+                    })
+                break;
+            case "ppt":
+            case "ppt文档":
+                if (!setting.保险模式)
+                    delayExec(() => {
+                        pptHandler()
+                    })
+                break;
+            case "swf":
+                swfHandler()
+                break;
+            case "视频":
+            case "音频":
+                delayExec(() => {
+                    mediaHandler()
+                }, setting.组件等待时间)
+                break;
+            case "图文":
+            case "压缩包":
+                emptyHandler()
+                break;
+            default:
+                console.log(`课件 : ${cellType} 未提供兼容, ${setting.未做兼容课件打开评论 ? '已开启兼容评论,仅运行评论' : '已跳过处理'},请在github issue  (https://github.com/W-ChihC/SimpleIcveMoocHelper)  反馈该日志,与作者取得联系`);
+                break
+        }
 }
 
 
@@ -389,7 +493,7 @@ function getQueryValue(query, url = window.location.search) {
  * 仅仅评论的处理器 
  */
 async function emptyHandler() {
-    console.log("啥也没干,请联系作者");
+    console.log("啥也没干,请联系作者", cellType);
 }
 
 async function swfHandler() {
@@ -455,25 +559,10 @@ async function pptHandler() {
 
 
 /**
-* 处理评论
-*    并准备换页
-*/
-async function commentHandler() {
-    if (!isTabsFinished[0] && setting.激活评论选项卡 || setting.激活所有选项卡的评论)
-        await submitComment()
-    if (!isTabsFinished[1] && setting.激活笔记选项卡 || setting.激活所有选项卡的评论)
-        await submitNote()
-    if (!isTabsFinished[2] && setting.激活问答选项卡 || setting.激活所有选项卡的评论)
-        await submitQuestion()
-    if (!isTabsFinished[3] && setting.激活报错选项卡 || setting.激活所有选项卡的评论)
-        await submitReport()
-    console.log("评论阶段结束工作,开始进入下一个课件");
-    nextCell()
-}
-/**
  * 评论
  */
 async function submitComment() {
+    // debugger
     return new Promise(async (resolve, reject) => {
         //评5星
         $("#star #starImg4").click();
@@ -482,34 +571,35 @@ async function submitComment() {
         //提交
         await delayExec(async () => {
             $("#btnComment").click();
-            await delayExec(async () => {
-                $(".sgBtn.ok").click();
-                console.log("评论成功");
-                isTabsFinished[0] = true
-                resolve()
-            });
+            // await delayExec(() => {
+            //     $(".sgBtn.ok").click();
+            //     console.log("评论成功");
+            // }, setting.组件等待时间);
+            resolve()
         });
+
     })
 }
 /**
  * 问答
  */
 async function submitQuestion() {
-    await delayExec(() => {
-        $($(".am-tabs-nav>li a")[1]).click()
-    })
+    // debugger
     return new Promise(async (resolve, reject) => {
         //随机从词库填写评论
         $(".questionContent").text(setting.随机评论词库[rnd(0, setting.随机评论词库.length - 1)])
+        console.time("q")
         //提交
         await delayExec(async () => {
+            console.timeEnd("q")
             $("#btnQuestion").click();
-            await delayExec(async () => {
-                $(".sgBtn.ok").click();
-                console.log("问答成功");
-                isTabsFinished[1] = true
-                resolve()
-            });
+            resolve()
+            // await delayExec(() => {
+            //     $(".sgBtn.ok").click();
+            //     console.log("问答成功");
+            //     resolve()
+            // }, setting.组件等待时间);
+
         }, 60000);
     })
 }
@@ -517,9 +607,7 @@ async function submitQuestion() {
  * 笔记
  */
 async function submitNote() {
-    await delayExec(() => {
-        $($(".am-tabs-nav>li a")[2]).click()
-    })
+    // debugger
     return new Promise(async (resolve, reject) => {
 
         //随机从词库填写评论
@@ -527,12 +615,12 @@ async function submitNote() {
         //提交
         await delayExec(async () => {
             $("#btnNote").click();
-            await delayExec(async () => {
-                $(".sgBtn.ok").click();
-                console.log("笔记成功");
-                isTabsFinished[2] = true
-                resolve()
-            });
+            resolve()
+            // await delayExec(() => {
+            //     $(".sgBtn.ok").click();
+            //     console.log("笔记成功");
+            //     resolve()
+            // }, setting.组件等待时间);
         });
     })
 }
@@ -540,21 +628,21 @@ async function submitNote() {
  * 报错
  */
 async function submitReport() {
-    await delayExec(() => {
-        $($(".am-tabs-nav>li a")[3]).click()
-    })
+
     return new Promise(async (resolve, reject) => {
         //随机从词库填写评论
         $(".cellErrorContent").text(setting.随机评论词库[rnd(0, setting.随机评论词库.length - 1)])
+        console.time("s")
         //提交
         await delayExec(async () => {
+            console.timeEnd("s")
             $("#btnCellError").click();
-            await delayExec(async () => {
-                $(".sgBtn.ok").click();
-                console.log("报错成功");
-                isTabsFinished[3] = true
-                resolve()
-            });
+            resolve()
+            // await delayExec(() => {
+            //     $(".sgBtn.ok").click();
+            //     console.log("报错成功");
+            //     resolve()
+            // }, setting.组件等待时间);
         }, 60000);
     })
 }
@@ -579,6 +667,7 @@ function homeworkHandler() {
     uncageCopyLimit()
     if (!setting.自定义题库服务器) {
         alert("未填写题库📝,无法正常使用答题,仅提供破解网站限制")
+        return
     }
     bindBtnToQuestion()
 }
