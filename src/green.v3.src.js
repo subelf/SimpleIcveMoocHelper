@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.2.6
+// @version      3.2.7
 // @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -132,6 +132,7 @@ let isPassMonit = false;
         if (data && data.indexOf("studyNewlyTime") >= 0) {
             try {
                 isPassMonit = true
+                autoCloseDialog()
                 if (!setting.激活仅评论并关闭刷课件) {
                     let readedNum = parseInt(getQueryValue("studyNewlyPicNum", "?" + data));
                     // 四舍五入留 两位与服务器计时同步
