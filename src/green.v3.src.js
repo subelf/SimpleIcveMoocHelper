@@ -80,7 +80,7 @@ async function delayExec(func, fixedDelay = null) {
         setTimeout(() => {
             resolve(func())
             taskStack--
-            console.log(`已完成延时${newTime}ms的任务,待执行任务总计:${taskStack}`);
+            console.log(`完成延时${newTime}ms的任务,待执行任务总计:${taskStack}`);
         }, newTime);
         console.log(`新增任务,等待时间${newTime}ms,待执行任务总计:${taskStack}`);
     });
@@ -120,61 +120,66 @@ delayExec(() => {
     console.log(`脚本已启动 当前位置:${url}`);
 }, setting.组件等待时间);
 let lastNum = 10;
-let currentCellData = "";
+let currentCellData = {};
+let isPassMonit = false;
 // 全局请求拦截器
 (function (open, send) {
 
     // 拦截发出的请求
     XMLHttpRequest.prototype.send = function (data) {
+
         // 学生课件状态检查
         if (data && data.indexOf("studyNewlyTime") >= 0) {
-            if (!setting.激活仅评论并关闭刷课件) {
-                const readedNum = parseInt(getQueryValue("studyNewlyPicNum", "?" + data));
-                // 四舍五入留 两位与服务器计时同步
-                const readedTime = Math.round(parseFloat(getQueryValue("studyNewlyTime", "?" + data)) * 100) / 100;
-                // 非媒体课件下启动
-                if (!readedTime && !startTime)
-                    startTime = $.now()
-                // 纠正空课件监控问题
-                if (pageCount === 1)
-                    readedNum = 1
-                console.log(`文档同步进度:${readedNum}/${pageCount}`, `视频同步进度:${readedTime}/${mediaLong}`);
-                // 某些课件未被检测
-                lastNum = readedNum && readedNum
-                if (lastNum === 0 && setting.保险模式) {
-                    console.log("保险模式启动失败,已尝试关闭");
-                    if (setting.自动关闭保险模式) {
-                        setting.保险模式 = false
-                        requestMatcher("viewDirectory", currentCellData)
-                    }
-                    return
-                }
-
-                // 判断当前课件是否已结束
-                if ((readedNum && pageCount && (readedNum >= pageCount)) || (mediaLong && readedTime && (readedTime >= mediaLong))) {
-                    isFinshed = true
-                    const endTime = $.now()
-                    // 应对检测需停留 10 秒
-                    if (endTime - (startTime || 0) >= 10000) {
-                        // 评论任务均已完成则跳转
-                        if (isUnFinishedTabs.indexOf(true) === -1) {
-                            nextCell()
-                            return
+            try {
+                isPassMonit = true
+                if (!setting.激活仅评论并关闭刷课件) {
+                    let readedNum = parseInt(getQueryValue("studyNewlyPicNum", "?" + data));
+                    // 四舍五入留 两位与服务器计时同步
+                    const readedTime = Math.round(parseFloat(getQueryValue("studyNewlyTime", "?" + data)) * 100) / 100;
+                    // 非媒体课件下启动
+                    if (!readedTime && !startTime)
+                        startTime = $.now()
+                    // 纠正空课件监控问题
+                    if (pageCount === 1)
+                        readedNum = 1
+                    console.log(`文档同步进度:${readedNum}/${pageCount}`, `视频同步进度:${readedTime}/${mediaLong}`);
+                    // 某些课件未被检测
+                    lastNum = readedNum && readedNum
+                    if (lastNum === 0 && setting.保险模式) {
+                        console.log("保险模式启动失败,已尝试关闭");
+                        if (setting.自动关闭保险模式) {
+                            setting.保险模式 = false
+                            requestMatcher("viewDirectory", currentCellData)
                         }
+                        return
                     }
-                    console.log(`未满足职教云课件完成检测 10 秒要求,继续等待中,已等待:${endTime - startTime}ms`);
-                } else if (setting.保险模式) {
-                    pageCount && console.log(`文档类🔐模式:${readedNum}/${pageCount}`);
-                    const pptNext = $(".stage-next"), docNext = $(".MPreview-pageNext");
-                    pptNext && pptNext.click()
-                    docNext && docNext.click()
+
+                    // 判断当前课件是否已结束
+                    if ((readedNum && pageCount && (readedNum >= pageCount)) || (mediaLong && readedTime && (readedTime >= mediaLong))) {
+                        isFinshed = true
+                        const endTime = $.now()
+                        // 应对检测需停留 10 秒
+                        if (endTime - (startTime || 0) >= 10000) {
+                            // 评论任务均已完成则跳转
+                            if (isUnFinishedTabs.indexOf(true) === -1) {
+                                nextCell()
+                                return
+                            }
+                        }
+                        console.log(`未满足职教云课件完成检测 10 秒要求,继续等待中,已等待:${endTime - startTime}ms`);
+                    } else if (setting.保险模式) {
+                        pageCount && console.log(`文档类🔐模式:${readedNum}/${pageCount}`);
+                        nextDOCPPT()
+                    }
+                } else {
+                    // 评论任务均已完成则跳转
+                    if (isUnFinishedTabs.indexOf(true) === -1) {
+                        nextCell()
+                        return
+                    }
                 }
-            } else {
-                // 评论任务均已完成则跳转
-                if (isUnFinishedTabs.indexOf(true) === -1) {
-                    nextCell()
-                    return
-                }
+            } catch (error) {
+                console.log(error);
             }
         }
         send.apply(this, arguments);
@@ -357,10 +362,8 @@ async function requestMatcher(url, data, that) {
                             })
                         }
                     }
-
-
                     console.log(`已成功缓存${finalData.length}条未完成小节信息`);
-                    sessionStorage.setItem(classId, JSON.stringify(finalData))
+                    sessionStorage.setItem(classId, JSON.stringify(finalData.reverse()))
                 }
                 const data_ = JSON.parse(sessionStorage.getItem(classId))
                 console.log(data_);
@@ -456,8 +459,8 @@ function cellHandlerMatcher() {
                 break;
             case "ppt":
                 if (!setting.保险模式)
-                    delayExec(() => {
-                        pptHandler()
+                    delayExec(async () => {
+                        await pptHandler()
                     })
                 break;
             case "swf":
@@ -574,18 +577,35 @@ async function docHandler() {
  */
 async function pptHandler() {
     // 异步处理
-    await new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         for (let i = 1; i <= pageCount; i++) {
             //点击下一页
             await delayExec(() => {
-                $(".stage-next").click()
+                nextDOCPPT()
                 console.log(`ppt第${i}页,总页数:${pageCount}`);
                 //达到次数解除阻塞
-                if (isFinshed || i === pageCount)
+                if (isFinshed || i === pageCount && mediaLong === 0)
                     resolve()
             })
         }
+        // if (pageCount === 1) {
+        //     for (let i = 0; i < 5; i++)
+        //         nextDOCPPT()
+        //     delayExec(() => {
+        //         nextCell()
+        //         resolve()
+        //     }, 15000)
+        // }
     })
+}
+/**
+ * 下一页PPT 或文档
+ */
+function nextDOCPPT() {
+    const pptNext = $(".stage-next"), docNext = $(".MPreview-pageNext"), sNext = $(".stage-next-btn");
+    pptNext && pptNext.click()
+    docNext && docNext.click()
+    sNext && sNext.click()
 }
 
 
