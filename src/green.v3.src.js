@@ -646,10 +646,8 @@ async function submitQuestion() {
     return new Promise(async (resolve, reject) => {
         //随机从词库填写评论
         $(".questionContent").text(setting.随机评论词库[rnd(0, setting.随机评论词库.length - 1)])
-        console.time("q")
         //提交
         await delayExec(async () => {
-            console.timeEnd("q")
             $("#btnQuestion").click();
             resolve()
             // await delayExec(() => {
@@ -690,10 +688,8 @@ async function submitReport() {
     return new Promise(async (resolve, reject) => {
         //随机从词库填写评论
         $(".cellErrorContent").text(setting.随机评论词库[rnd(0, setting.随机评论词库.length - 1)])
-        console.time("s")
         //提交
         await delayExec(async () => {
-            console.timeEnd("s")
             $("#btnCellError").click();
             resolve()
             // await delayExec(() => {
