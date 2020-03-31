@@ -90,7 +90,7 @@
 | 测试浏览器 | Chrome                                                                                     | Chrome                                                                                          | Chromium 80(低版本不兼容)                                                                  |
 | 已知问题   | 暂无                                                                                       | 暂无                                                                                            | 暂无                                                                                       |
 | 源文件     | [bule.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/blue.src.js) | [green.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/green.v3.src.js) | [cyan.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/cyan.src.js) |
-| 版本       | 1.08                                                                                       | 3.2.1                                                                                             | 0.2(IndexDB)                                                                               |
+| 版本       | 1.08                                                                                       | 3.2.4                                                                                           | 0.2(IndexDB)                                                                               |
 
 ~~大一菜鸡 学习 JS 练手所写, ES5,6 瞎混搭,勿喷~~
 
