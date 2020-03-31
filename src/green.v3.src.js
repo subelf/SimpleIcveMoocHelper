@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.2.4
+// @version      3.2.5
 // @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -155,7 +155,7 @@ let isPassMonit = false;
                     }
 
                     // 判断当前课件是否已结束
-                    if ((readedNum && pageCount && (readedNum >= pageCount)) || (mediaLong && readedTime && (readedTime >= mediaLong))) {
+                    if (readedNum && pageCount && (readedNum >= pageCount)) {
                         isFinshed = true
                         const endTime = $.now()
                         // 应对检测需停留 10 秒
