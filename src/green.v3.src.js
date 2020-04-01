@@ -8,7 +8,8 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_registerMenuCommand
 // @match       *://*.zjy2.icve.com.cn/*
-// @match       *zjy2.icve.com.cn/*
+// @match       *://*zjy2.icve.com.cn/*
+// @exclude     *://*zjy2.icve.com.cn/study/homework/docHomeworkPreview.html*
 // @license      MIT
 // @namespace https://greasyfork.org/users/449085
 // @supportURL https://github.com/W-ChihC/SimpleIcveMoocHelper
@@ -20,7 +21,7 @@ const setting = {
     // 题库 IP地址 ,可在553行查看对接接口要求
     自定义题库服务器: "",// 协议://IP
     // 随机评论,自行扩充格式如     "你好",     (英文符号)
-    随机评论词库: ["........", ".", "/n",],
+    随机评论词库: ["........", ".", "...",],
     //是否打开课件下载
     打开课件下载: true,
     // 保证文档类与网站请求保持同步,因此速度较慢,实测可以不用这么严格,默认打开
@@ -31,7 +32,7 @@ const setting = {
     最高延迟响应时间: 5000,//毫秒
     最低延迟响应时间: 3000,//毫秒
     组件等待时间: 1500,//毫秒 组件包括视频播放器,JQuery等,视网络,设备性能而定,启动失败则调整
-    //0-高清 1-清晰 2-流畅 3-原画 
+    //0-高清 1-清晰 2-流畅 3-原画
     //感谢tonylu00提供最新实测参数 --0-原画 1-高清 2-清晰 3-流畅
     视频清晰度: 3,
     //2倍速,允许开倍速则有效,请放心使用,失败是正常现象
@@ -301,7 +302,7 @@ async function requestMatcher(url, data, that) {
                             enumerable: true
                         });
                     }
-                    //修改响应数据 
+                    //修改响应数据
                     that._responseText = JSON.stringify(data)
                 }
                 // 课件页数
@@ -517,7 +518,7 @@ function getQueryValue(query, url = window.location.search) {
 
 
 /**
- * 仅仅评论的处理器 
+ * 仅仅评论的处理器
  */
 async function emptyHandler() {
     console.log("啥也没干,请联系作者", cellType);
@@ -538,6 +539,37 @@ function mediaHandler() {
     let state = null;
     try {
         state = player.getState();
+
+
+        //视频暂停状态
+        if (state == "paused" || state === 'idle') {
+            console.log("媒体已暂停,恢复播放");
+            player.play()
+        }
+        //播放原已完成
+        if (player.getState() == "complete") {
+            console.log("媒体播放已完成");
+            // 评论任务均已完成则跳转
+            if (isUnFinishedTabs.indexOf(true) === -1) {
+                nextCell()
+                return
+            }
+            isFinshed = true
+            return
+        }
+        //播放回调
+        player.on("playlistComplete", () => {
+            console.log("媒体播放完成");
+            // 评论任务均已完成则跳转
+            if (isUnFinishedTabs.indexOf(true) === -1) {
+                nextCell()
+                return
+            }
+            isFinshed = true
+        })
+        if (player.getDuration() === 0) {
+            isFinshed = true
+        }
     } catch (error) {
         console.log("课件为空或无法解析", error);
         // 评论任务均已完成则跳转
@@ -545,36 +577,6 @@ function mediaHandler() {
             nextCell()
             return
         }
-        isFinshed = true
-    }
-
-    //视频暂停状态
-    if (state == "paused" || state === 'idle') {
-        console.log("媒体已暂停,恢复播放");
-        player.play()
-    }
-    //播放原已完成
-    if (player.getState() == "complete") {
-        console.log("媒体播放已完成");
-        // 评论任务均已完成则跳转
-        if (isUnFinishedTabs.indexOf(true) === -1) {
-            nextCell()
-            return
-        }
-        isFinshed = true
-        return
-    }
-    //播放回调
-    player.on("playlistComplete", () => {
-        console.log("媒体播放完成");
-        // 评论任务均已完成则跳转
-        if (isUnFinishedTabs.indexOf(true) === -1) {
-            nextCell()
-            return
-        }
-        isFinshed = true
-    })
-    if (player.getDuration() === 0) {
         isFinshed = true
     }
     //配置
@@ -612,11 +614,11 @@ async function docHandler() {
 async function pptHandler() {
     // 异步处理
     return new Promise(async (resolve, reject) => {
-        for (let i = 1; i <= pageCount; i++) {
+        for (let i = 1; i <= pageCount * 2; i++) {
             //点击下一页
             await delayExec(() => {
                 nextDOCPPT()
-                console.log(`ppt第${i}页,总页数:${pageCount}`);
+                // console.log(`ppt第${i}页,总页数:${pageCount}`);
                 //达到次数解除阻塞
                 if (isFinshed || i === pageCount && mediaLong === 0)
                     resolve()
@@ -786,15 +788,15 @@ const server = setting.自定义题库服务器 || "http://127.0.0.1:5000"
  *    'options':'题目选项,可留空',
  *    'msg': '消息,可留空'
  * },{
- * 
+ *
  *    }
  * ]
- * 
+ *
  */
 
 /**
  * 搜索答案
- * @param {*} i 
+ * @param {*} i
  */
 function searchAnswer(i) {
     // 往前查找同辈元素
@@ -812,7 +814,7 @@ function searchAnswer(i) {
 let nextLock = false
 /**
  * 显示搜索框
- * @param {*} params 
+ * @param {*} params
  */
 function showAnswerListDiv(questionTitle, data, id) {
     if ($("#answerBlock").length == 0) {
@@ -833,7 +835,7 @@ function showAnswerListDiv(questionTitle, data, id) {
                                         </tr>
                                     </thead>
                                     <tbody align="left">
-                                            
+
                                     </tbody>
                                     <tfoot align="center">
                                     <tr>
@@ -948,11 +950,11 @@ function fillAnswer(aID, qId) {
 
 /**
 * 对XHR的二次全局封装,方便后期扩展
-* @param {*} method 
-* @param {*} url 
-* @param {*} headers 
-* @param {*} data 
-* @param {*} onSuccess 
+* @param {*} method
+* @param {*} url
+* @param {*} headers
+* @param {*} data
+* @param {*} onSuccess
 */
 function requestAPI(method, url, { headers, data, onSuccess }) {
     GM_xmlhttpRequest({
