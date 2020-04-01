@@ -42,7 +42,7 @@ const setting = {
     //默认关闭(false),true为打开
     //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置,
     激活仅评论并关闭刷课件: false,
-    激活所有选项卡的评论: false,
+    激活所有选项卡的评论: true,
     激活评论选项卡: false,
     激活问答选项卡: false,
     激活笔记选项卡: false,
@@ -105,7 +105,7 @@ GM_registerMenuCommand("问题反馈", function () {
 GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
     top.open("https://greasyfork.org/zh-CN/users/449085")
 });
-GM_registerMenuCommand("当前版本:绿版 v3.2.10✅", function () {
+GM_registerMenuCommand("当前版本:绿版 v3.2.13✅", function () {
     top.open("https://greasyfork.org/zh-CN/scripts/396813/versions")
 });
 // 一页页面加载后的工作
@@ -134,12 +134,15 @@ let isPassMonit = false;
 
         // 学生课件状态检查
         if (data && data.indexOf("studyNewlyTime") >= 0) {
+            // 关闭错误弹窗
+            $(".sgBtn.ok").click();
+
             try {
                 isPassMonit = true
                 autoCloseDialog()
                 if (!setting.激活仅评论并关闭刷课件) {
                     let readedNum = parseInt(getQueryValue("studyNewlyPicNum", "?" + data));
-                    // 四舍五入留 两位与服务器计时同步
+                    // 四舍五入留两位与服务器计时同步
                     const readedTime = Math.round(parseFloat(getQueryValue("studyNewlyTime", "?" + data)) * 100) / 100;
                     const picNum = parseInt(getQueryValue("picNum", "?" + data))
                     // 非媒体课件下启动
