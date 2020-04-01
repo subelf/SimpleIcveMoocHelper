@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.2.8b1
+// @version      3.2.9
 // @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -137,12 +137,16 @@ let isPassMonit = false;
                     let readedNum = parseInt(getQueryValue("studyNewlyPicNum", "?" + data));
                     // 四舍五入留 两位与服务器计时同步
                     const readedTime = Math.round(parseFloat(getQueryValue("studyNewlyTime", "?" + data)) * 100) / 100;
+                    const picNum = parseInt(getQueryValue("picNum", "?" + data))
                     // 非媒体课件下启动
                     if (!readedTime && !startTime)
                         startTime = $.now()
                     // 纠正空课件监控问题
                     if (pageCount === 1)
                         readedNum = 1
+                    // 损坏课件的问题
+                    if (picNum === 1 && readedNum === 0)
+                        pageCount = 1
                     console.log(`文档同步进度:${readedNum}/${pageCount}`, `视频同步进度:${readedTime}/${mediaLong}`);
                     // 某些课件未被检测
                     lastNum = readedNum && readedNum
