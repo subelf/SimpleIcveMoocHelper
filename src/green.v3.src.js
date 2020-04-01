@@ -326,7 +326,8 @@ async function requestMatcher(url, data, that) {
             {
                 const localS = sessionStorage.getItem(classId);
                 //未在本地找到遗留数据则重新获取
-                if (!localS || localS == "[]") {
+                if (!localS || localS === "[]" || localS === "null") {
+
                     if (!confirm("正在获取未完成小节数据,为避免检测,请耐心等待,点确定以继续,确认后勿关闭本页,直到再次弹窗,方会启动努力学习,否则脚本结束工作"))
                         return
                     const parentNode = data && data.progress;
@@ -395,8 +396,7 @@ function nextCell() {
     const data = JSON.parse(sessionStorage.getItem(classId));
     if (!data) {
         if (confirm("🆇未从缓存中检测到课程数据,是否进入正常运行流程")) {
-            location.href =
-                goPage("p")
+            goPage("p")
             return
         }
     }
@@ -426,6 +426,7 @@ function goPage(url, data = undefined) {
     } else {
         newPage = `${location.origin}/study/process/process.html?courseOpenId=${getQueryValue("courseOpenId")}&openClassId=${getQueryValue("openClassId")}`
     }
+    debugger
     top.location.href = newPage
 }
 
