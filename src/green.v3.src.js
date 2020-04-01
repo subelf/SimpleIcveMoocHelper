@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.2.9
+// @version      3.2.12
 // @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -24,7 +24,7 @@ const setting = {
     //是否打开课件下载
     打开课件下载: true,
     // 保证文档类与网站请求保持同步,因此速度较慢,实测可以不用这么严格,默认打开
-    保险模式: true,//如果课件始终不跳下一个,请勿打开该项
+    保险模式: false,//如果课件始终不跳下一个,请勿打开该项
     // 部分课件存在无检测机制问题,会尝试自动关闭保险模式
     自动关闭保险模式: true,
     /*影响刷课速度关键选项,延时非最优解,过慢请自行谨慎调整*/
@@ -103,6 +103,9 @@ GM_registerMenuCommand("问题反馈", function () {
 });
 GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
     top.open("https://greasyfork.org/zh-CN/users/449085")
+});
+GM_registerMenuCommand("当前版本:绿版 v3.2.10✅", function () {
+    top.open("https://greasyfork.org/zh-CN/scripts/396813/versions")
 });
 // 一页页面加载后的工作
 delayExec(() => {
@@ -215,7 +218,7 @@ async function requestMatcher(url, data, that) {
                 // 评论已完成
                 console.log("我的评论: ", item);
                 //解决不同机制判断问题
-                if (isFinshed && isUnFinishedTabs.indexOf(true) === -1) {
+                if (isFinshed && isUnFinishedTabs.indexOf(true) === -1 && taskStack === 0) {
                     nextCell()
                 }
 
@@ -426,7 +429,6 @@ function goPage(url, data = undefined) {
     } else {
         newPage = `${location.origin}/study/process/process.html?courseOpenId=${getQueryValue("courseOpenId")}&openClassId=${getQueryValue("openClassId")}`
     }
-    debugger
     top.location.href = newPage
 }
 
@@ -572,7 +574,9 @@ function mediaHandler() {
         }
         isFinshed = true
     })
-
+    if (player.getDuration() === 0) {
+        isFinshed = true
+    }
     //配置
     player.setMute(setting.是否保持静音)//静音
     player.setCurrentQuality(setting.视频清晰度)
@@ -586,13 +590,18 @@ function mediaHandler() {
  * 文档处理
  */
 async function docHandler() {
-    //根据按钮状态判断是否还有下一页
-    while ($(".MPreview-pageNext").hasClass('current')) {
-        console.log(`文档翻页,总页数:${pageCount}`);
-        //ppt翻页 异步方式
-        await delayExec(() => {
-            $(".MPreview-pageNext").click()
-        })
+
+    if ($(".MPreview-pageNext").length !== 0) {
+        //根据按钮状态判断是否还有下一页
+        while ($(".MPreview-pageNext").hasClass('current')) {
+            console.log(`文档翻页,总页数:${pageCount}`);
+            //ppt翻页 异步方式
+            await delayExec(() => {
+                $(".MPreview-pageNext").click()
+            })
+        }
+    } else {
+        await pptHandler()
     }
 }
 
@@ -634,12 +643,14 @@ function nextDOCPPT() {
 }
 
 
+
 /**
  * 评论
  */
 async function submitComment() {
     // debugger
     return new Promise(async (resolve, reject) => {
+
         //评5星
         $("#star #starImg4").click();
         //随机从词库填写评论
@@ -653,7 +664,6 @@ async function submitComment() {
             // }, setting.组件等待时间);
             resolve()
         });
-
     })
 }
 /**
@@ -683,7 +693,6 @@ async function submitQuestion() {
 async function submitNote() {
     // debugger
     return new Promise(async (resolve, reject) => {
-
         //随机从词库填写评论
         $(".noteContent").text(setting.随机评论词库[rnd(0, setting.随机评论词库.length - 1)])
         //提交
