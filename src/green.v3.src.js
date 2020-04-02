@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.2.13
-// @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
+// @version      3.2.14
+// @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,课件秒刷,保险模式,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
 // @grant        unsafeWindow
@@ -18,10 +18,13 @@
 /*jshint esversion:6 */
 'use strict'
 const setting = {
+    // true 为打开,false 为关闭
     // 题库 IP地址 ,可在553行查看对接接口要求
     自定义题库服务器: "",// 协议://IP
     // 随机评论,自行扩充格式如     "你好",     (英文符号)
     随机评论词库: ["........", ".", "...",],
+    // 秒刷课件,风险未知 打开需关闭仅评论
+    秒刷模式: true,
     //是否打开课件下载
     打开课件下载: true,
     // 保证文档类与网站请求保持同步,因此速度较慢,实测可以不用这么严格,默认打开
@@ -31,7 +34,7 @@ const setting = {
     /*影响刷课速度关键选项,延时非最优解,过慢请自行谨慎调整*/
     最高延迟响应时间: 5000,//毫秒
     最低延迟响应时间: 3000,//毫秒
-    组件等待时间: 1500,//毫秒 组件包括视频播放器,JQuery等,视网络,设备性能而定,启动失败则调整
+    组件等待时间: 2000,//毫秒 组件包括视频播放器,JQuery等,视网络,设备性能而定,启动失败则调整
     //0-高清 1-清晰 2-流畅 3-原画
     //感谢tonylu00提供最新实测参数 --0-原画 1-高清 2-清晰 3-流畅
     视频清晰度: 3,
@@ -39,10 +42,9 @@ const setting = {
     视频播放倍速: 2,
     //是否保持静音
     是否保持静音: true,
-    //默认关闭(false),true为打开
     //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置,
-    激活仅评论并关闭刷课件: false,
-    激活所有选项卡的评论: true,
+    激活仅评论并关闭刷课件: false,//与秒刷模式冲突,需二选一
+    激活所有选项卡的评论: false,
     激活评论选项卡: false,
     激活问答选项卡: false,
     激活笔记选项卡: false,
@@ -121,11 +123,47 @@ delayExec(() => {
             homeworkHandler()
             break;
     }
-    console.log(`脚本已启动 当前位置:${url}`);
+    $(document).ajaxSend((e, xhr, options) => {
+        if (setting.秒刷模式 && !setting.激活仅评论并关闭刷课件)
+            if (options.url.indexOf("stuProcessCellLog") > -1) {
+                if (!$.parseParams)
+                    $.extend({
+                        parseParams: function (e) {
+                            for (var o, i = /([^&=]+)=?([^&]*)/g, n = /\+/g, c = function (e) {
+                                return decodeURIComponent(e.replace(n, " "))
+                            }, r = {}; o = i.exec(e);) {
+                                var f = c(o[1])
+                                    , a = c(o[2]);
+                                "[]" === f.substring(f.length - 2) ? (f = f.substring(0, f.length - 2),
+                                    (r[f] || (r[f] = [])).push(a)) : r[f] = a
+                            }
+                            return r
+                        },
+                        htmlencode: function (o) {
+                            return e("<div />").text(o).html()
+                        },
+                        htmldecode: function (o) {
+                            return e("<div />").html(o).text()
+                        }
+                    })
+
+                const params = $.parseParams && $.parseParams(options.data);
+                if (params)
+                    options.data = $.param({
+                        ...params,
+                        studyNewlyTime: mediaLong,
+                        picNum: pageCount,
+                        studyNewlyPicNum: pageCount
+                    })
+            }
+    });
 }, setting.组件等待时间);
 let lastNum = 10;
 let currentCellData = {};
 let isPassMonit = false;
+
+
+
 // 全局请求拦截器
 (function (open, send) {
 
@@ -167,7 +205,7 @@ let isPassMonit = false;
                     }
 
                     // 判断当前课件是否已结束
-                    if (readedNum && pageCount && (readedNum >= pageCount)) {
+                    if ((readedNum && pageCount && (readedNum >= pageCount)) || setting.秒刷模式) {
                         isFinshed = true
                         const endTime = $.now()
                         // 应对检测需停留 10 秒
