@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.2.14
+// @version      3.2.15
 // @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,课件秒刷,保险模式,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -624,7 +624,14 @@ function mediaHandler() {
             }
             isFinshed = true
         })
-
+        //配置
+        player.setMute(setting.是否保持静音)//静音
+        player.setCurrentQuality(setting.视频清晰度)
+        try {
+            player.setPlaybackRate(setting.视频播放倍速)
+        } catch (error) {
+            console.log('倍速开启失败...正常现象.');
+        }
     } catch (error) {
         console.log("课件为空或无法解析", error);
         // 评论任务均已完成则跳转
@@ -634,14 +641,7 @@ function mediaHandler() {
         }
         isFinshed = true
     }
-    //配置
-    player.setMute(setting.是否保持静音)//静音
-    player.setCurrentQuality(setting.视频清晰度)
-    try {
-        player.setPlaybackRate(setting.视频播放倍速)
-    } catch (error) {
-        console.log('倍速开启失败...正常现象.');
-    }
+
 }
 /**
  * 文档处理
