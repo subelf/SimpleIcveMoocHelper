@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.2.17
-// @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,课件秒刷,保险模式,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
+// @version      3.3.0
+// @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,课件秒刷,保险模式,补签,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
 // @grant        unsafeWindow
@@ -61,6 +61,7 @@ const setting = {
 const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 const classId = getQueryValue("openClassId")
 const cellID = getQueryValue("cellId")
+const stuId = localStorage.getItem("userId")
 // 课件完成相关判定数据
 let pageCount, mediaLong, cellType, startTime, lastArchiveCount
 //课件是否已完成
@@ -119,6 +120,9 @@ GM_registerMenuCommand("📝检查脚本配置", function () {
     📝修改配置请找到油猴插件的管理面板
     `)
 });
+
+
+
 // 一页页面加载后的工作
 delayExec(() => {
     autoCloseDialog()
@@ -260,10 +264,10 @@ let isPassMonit = false;
  */
 async function requestMatcher(url, data, that) {
     autoCloseDialog()
+    // debugger
     switch (url) {
         // 评论
         case String(url.match(/.*getCellCommentData$/)):
-
             if (isUnFinishedTabs[0] || isUnFinishedTabs[1] || isUnFinishedTabs[2] || isUnFinishedTabs[3] || setting.激活所有选项卡的评论) {
                 const userId = localStorage.getItem("userId");
                 const item = data.list && data.list.find(item => item.userId === userId);
@@ -377,6 +381,14 @@ async function requestMatcher(url, data, that) {
                 cellHandlerMatcher()
             }
             break;
+
+        case String(url.match(/.*faceTeachActivityInfo$/)):
+            {
+                delayExec(() => {
+                    appendSign(data.list)
+                }, setting.组件等待时间)
+            }
+            break
         // 课程章节目录
         case String(url.match(/.*getProcessList$/)):
             {
@@ -468,6 +480,35 @@ function nextCell() {
 
     delayExec(() => {
         goPage(null, surplusData.pop())
+    })
+}
+
+/**
+ * 补签
+ *  借鉴 @一碗炒冷饭 同学的抓包分析结果
+ */
+function appendSign(list) {
+    const noSignBtns = $("p:contains('未参与')").closest(".np-hw-status");
+
+    let i = 0
+    list && list.forEach((item, index) => {
+        if (item.selectType < 3 && item.activityType === 1)
+            $(noSignBtns[i++]).append(`<p class="np-hw-score sBtn" id="${item.Id}">补签</p>`)
+    })
+    $(".sBtn").on("click", async (event) => {
+        const signId = event.srcElement.attributes["id"].value
+        let result = await requestAPI('POST', 'https://zjyapp.icve.com.cn/newMobileAPI/FaceTeach/changeSignType', {
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
+            },
+            data: 'data={"SignResultType" : 1,"StuId" :\"' + stuId + '\","OpenClassId" :\"' + classId + '\","SignId" :\"' + signId + '\","Id" : \"' + stuId + '\","SourceType" : 3}&sourceType=3'
+        })
+        if (JSON.parse(result.responseText).code === 1) {
+            if (alert("补签成功"))
+                location.reload()
+        } else {
+            alert("很遗憾,补签失败")
+        }
     })
 }
 
@@ -1013,26 +1054,32 @@ function fillAnswer(aID, qId) {
 * @param {*} onSuccess
 */
 function requestAPI(method, url, { headers, data, onSuccess }) {
-    GM_xmlhttpRequest({
-        method: method,
-        url: url,
-        headers: headers,
-        data: data,
-        timeout: setting.请求超时,
-        onload: function (xhr) {
-            switch (xhr.status) {
-                case 200:
-                    // let obj = $.parseJSON(xhr.responseText) || {};
-                    onSuccess(xhr)
-                    break;
-                default:
-                    alert(xhr)
-                    console.log(xhr);
-                    break;
+    return new Promise((resolve, reject) => {
+        GM_xmlhttpRequest({
+            method: method,
+            url: url,
+            headers: headers,
+            data: data,
+            timeout: setting.请求超时,
+            onload: function (xhr) {
+                switch (xhr.status) {
+                    case 200:
+                        // let obj = $.parseJSON(xhr.responseText) || {};
+                        if (onSuccess)
+                            onSuccess(xhr)
+                        else
+                            resolve(xhr)
+                        break;
+                    default:
+                        alert(xhr)
+                        console.log(xhr);
+                        break;
+                }
+            },
+            ontimeout: function () {
+                alert("响应超时")
             }
-        },
-        ontimeout: function () {
-            alert("响应超时")
-        }
-    });
+        });
+    })
+
 }
