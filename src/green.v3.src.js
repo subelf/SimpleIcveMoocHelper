@@ -107,7 +107,7 @@ GM_registerMenuCommand("问题反馈", function () {
 GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
     top.open("https://greasyfork.org/zh-CN/users/449085")
 });
-GM_registerMenuCommand("当前版本:绿版 v3.2.13✅", function () {
+GM_registerMenuCommand("当前版本:绿版 v3.2.14✅", function () {
     top.open("https://greasyfork.org/zh-CN/scripts/396813/versions")
 });
 // 一页页面加载后的工作
@@ -123,8 +123,9 @@ delayExec(() => {
             homeworkHandler()
             break;
     }
-    $(document).ajaxSend((e, xhr, options) => {
-        if (setting.秒刷模式 && !setting.激活仅评论并关闭刷课件)
+    
+    if (setting.秒刷模式 && !setting.激活仅评论并关闭刷课件)
+        $(document).ajaxSend((e, xhr, options) => {
             if (options.url.indexOf("stuProcessCellLog") > -1) {
                 if (!$.parseParams)
                     $.extend({
@@ -156,7 +157,7 @@ delayExec(() => {
                         studyNewlyPicNum: pageCount
                     })
             }
-    });
+        });
 }, setting.组件等待时间);
 let lastNum = 10;
 let currentCellData = {};
