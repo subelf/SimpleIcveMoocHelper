@@ -23,12 +23,12 @@ const setting = {
     自定义题库服务器: "",// 协议://IP
     // 随机评论,自行扩充格式如     "你好",     (英文符号)
     随机评论词库: ["........", ".", "...",],
-    // 秒刷课件,风险未知 打开需关闭仅评论
-    秒刷模式: true,
+    // 刺激!秒刷课件,风险未知,暂知时长不良 打开需关闭仅评论
+    秒刷模式: false,
+    // 稳!保证文档类与网站请求保持同步,因此速度较慢,实测可以不用这么严格,默认打开
+    保险模式: false,//如果课件始终不跳下一个,请勿打开该项
     //是否打开课件下载
     打开课件下载: true,
-    // 保证文档类与网站请求保持同步,因此速度较慢,实测可以不用这么严格,默认打开
-    保险模式: false,//如果课件始终不跳下一个,请勿打开该项
     // 部分课件存在无检测机制问题,会尝试自动关闭保险模式
     自动关闭保险模式: true,
     /*影响刷课速度关键选项,延时非最优解,过慢请自行谨慎调整*/
@@ -96,7 +96,7 @@ function autoCloseDialog() {
         $dialog.find("#studyNow").click()
 }
 
-GM_registerMenuCommand("重新获取未完成小节", function () {
+GM_registerMenuCommand("🔄重新获取未完成小节", function () {
     sessionStorage.clear()
     goPage("p")
 });
@@ -107,8 +107,17 @@ GM_registerMenuCommand("问题反馈", function () {
 GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
     top.open("https://greasyfork.org/zh-CN/users/449085")
 });
-GM_registerMenuCommand("当前版本:绿版 v3.2.14✅", function () {
-    top.open("https://greasyfork.org/zh-CN/scripts/396813/versions")
+GM_registerMenuCommand("📝检查脚本配置", function () {
+    alert(`
+    当前版本:绿版 v3.2.15✅
+    题库:${setting.自定义题库服务器 ? setting.自定义题库服务器 : "❌无"}
+    秒刷模式: ${setting.秒刷模式 ? "✅打开" : "❌关闭"}
+    保险模式: ${setting.保险模式 ? "✅打开" : "❌关闭"}
+    仅评论模式: ${setting.激活仅评论并关闭刷课件 ? "✅打开" : "❌关闭"}
+    当前评论库: [ ${setting.随机评论词库} ]
+    已激活的评论选项卡:${((setting.激活所有选项卡的评论 || setting.激活评论选项卡) ? "评论;" : "") + ((setting.激活所有选项卡的评论 || setting.激活问答选项卡) ? "问答;" : "") + ((setting.激活所有选项卡的评论 || setting.激活笔记选项卡) ? "笔记;" : "") + ((setting.激活所有选项卡的评论 || setting.激活报错选项卡) ? "报错" : "")}\n
+    📝修改配置请找到油猴插件的管理面板
+    `)
 });
 // 一页页面加载后的工作
 delayExec(() => {
@@ -123,7 +132,7 @@ delayExec(() => {
             homeworkHandler()
             break;
     }
-    
+
     if (setting.秒刷模式 && !setting.激活仅评论并关闭刷课件)
         $(document).ajaxSend((e, xhr, options) => {
             if (options.url.indexOf("stuProcessCellLog") > -1) {
@@ -147,7 +156,6 @@ delayExec(() => {
                             return e("<div />").html(o).text()
                         }
                     })
-
                 const params = $.parseParams && $.parseParams(options.data);
                 if (params)
                     options.data = $.param({
@@ -323,6 +331,7 @@ async function requestMatcher(url, data, that) {
         // 载入课件
         case String(url.match(/.*viewDirectory|loadCellResource$/)):
             {
+                autoCloseDialog()
                 if (setting.激活仅评论并关闭刷课件) {
                     console.log("仅开启评论已打开");
                     // commentHandler()
@@ -374,7 +383,7 @@ async function requestMatcher(url, data, that) {
                 //未在本地找到遗留数据则重新获取
                 if (!localS || localS === "[]" || localS === "null") {
 
-                    if (!confirm("正在获取未完成小节数据,为避免检测,请耐心等待,点确定以继续,确认后勿关闭本页,直到再次弹窗,方会启动努力学习,否则脚本结束工作"))
+                    if (!confirm("正在获取未完成小节数据,为避免检测,请耐心等待🖥\n✅确定以继续,确认后勿关闭本页\n直到再次弹窗,否则脚本将结束工作"))
                         return
                     const parentNode = data && data.progress;
                     //过滤已经学习完的课件
@@ -577,12 +586,18 @@ async function swfHandler() {
  * 视频/音频类处理
  */
 function mediaHandler() {
-    let player = top.jwplayer($(".jwplayer").attr("id"));
-    let state = null;
     try {
+        let player = top.jwplayer($(".jwplayer").attr("id"));
+        let state = null;
+
+        if (player.getDuration() === 0) {
+            if (setting.秒刷模式 || isUnFinishedTabs.indexOf(true) === -1) {
+                nextCell()
+                return
+            }
+            isFinshed = true
+        }
         state = player.getState();
-
-
         //视频暂停状态
         if (state == "paused" || state === 'idle') {
             console.log("媒体已暂停,恢复播放");
@@ -592,7 +607,7 @@ function mediaHandler() {
         if (player.getState() == "complete") {
             console.log("媒体播放已完成");
             // 评论任务均已完成则跳转
-            if (isUnFinishedTabs.indexOf(true) === -1) {
+            if (isUnFinishedTabs.indexOf(true) === -1 && !setting.秒刷模式) {
                 nextCell()
                 return
             }
@@ -603,15 +618,13 @@ function mediaHandler() {
         player.on("playlistComplete", () => {
             console.log("媒体播放完成");
             // 评论任务均已完成则跳转
-            if (isUnFinishedTabs.indexOf(true) === -1) {
+            if (isUnFinishedTabs.indexOf(true) === -1 && !setting.秒刷模式) {
                 nextCell()
                 return
             }
             isFinshed = true
         })
-        if (player.getDuration() === 0) {
-            isFinshed = true
-        }
+
     } catch (error) {
         console.log("课件为空或无法解析", error);
         // 评论任务均已完成则跳转
