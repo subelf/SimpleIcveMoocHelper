@@ -221,7 +221,7 @@
     */
     function commentHandler(current) {
 
-        if (isOpenComment) {
+        if (setting.isOpenComment) {
             //评5星
             $("#star #starImg4").click();
             //随机从词库填写评论
