@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.2.16
+// @version      3.2.17
 // @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,课件秒刷,保险模式,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -24,7 +24,7 @@ const setting = {
     // 随机评论,自行扩充格式如     "你好",     (英文符号)
     随机评论词库: ["........", ".", "...",],
     // 刺激!秒刷课件,风险未知,暂知时长不良 打开需关闭仅评论
-    秒刷模式: true,
+    秒刷模式: false,
     // 稳!保证文档类与网站请求保持同步,因此速度较慢,实测可以不用这么严格,默认打开
     保险模式: false,//如果课件始终不跳下一个,请勿打开该项
     //是否打开课件下载
@@ -109,7 +109,7 @@ GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
 });
 GM_registerMenuCommand("📝检查脚本配置", function () {
     alert(`
-    当前版本:绿版 v3.2.16✅
+    当前版本:绿版 v3.2.17✅
     题库:${setting.自定义题库服务器 ? setting.自定义题库服务器 : "❌无"}
     秒刷模式: ${setting.秒刷模式 ? "✅打开" : "❌关闭"}
     保险模式: ${setting.保险模式 ? "✅打开" : "❌关闭"}
@@ -226,8 +226,9 @@ let isPassMonit = false;
                             }
                         }
                         console.log(`未满足职教云课件完成检测 10 秒要求,继续等待中,已等待:${endTime - startTime}ms`);
-                    } else if (setting.保险模式) {
-                        pageCount && console.log(`文档类🔐模式:${readedNum}/${pageCount}`);
+                    } else {
+                        if (setting.保险模式)
+                            pageCount && console.log(`文档类🔐模式:${readedNum}/${pageCount}`);
                         nextDOCPPT()
                     }
                 } else {
