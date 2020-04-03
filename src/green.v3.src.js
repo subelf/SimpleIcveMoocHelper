@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.3.0
+// @version      3.3.1
 // @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,课件秒刷,保险模式,补签,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -336,6 +336,11 @@ async function requestMatcher(url, data, that) {
         // 载入课件
         case String(url.match(/.*viewDirectory|loadCellResource$/)):
             {
+                if (data.code === -33) {
+                    nextCell()
+                    return
+                }
+
                 autoCloseDialog()
                 if (setting.激活仅评论并关闭刷课件) {
                     console.log("仅开启评论已打开");
@@ -420,7 +425,7 @@ async function requestMatcher(url, data, that) {
                                 const childList = item.childNodeList;
                                 if (childList && childList.length !== 0) {
                                     const childVaildList = childList.filter(i => {
-                                        if (i.cellType !== 4) {
+                                        if (i.cellType !== 4 && i.fromType !== 4) {
                                             if (setting.激活仅评论并关闭刷课件)
                                                 return true
                                             if (i.stuCellFourPercent !== 100)
@@ -430,7 +435,7 @@ async function requestMatcher(url, data, that) {
                                     });
                                     console.log(childVaildList);
                                     finalData.push(...childVaildList)
-                                } else if (item.cellType !== 4) {
+                                } else if (item.cellType !== 4 && item.fromType !== 4) {
                                     if (setting.激活仅评论并关闭刷课件)
                                         finalData.push(item)
                                     else if (item.stuCellPercent !== 100)
