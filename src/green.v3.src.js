@@ -95,6 +95,10 @@ function autoCloseDialog() {
     //关闭限制弹窗
     if ($dialog.length > 0)
         $dialog.find("#studyNow").click()
+
+    if ($(".xcConfirm")) {
+        $(".xcConfirm").css({ "display": "none" })
+    }
 }
 
 GM_registerMenuCommand("🔄重新获取未完成小节", function () {
