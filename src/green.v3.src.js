@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.3.4
+// @version      3.3.5
 // @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,课件秒刷,保险模式,补签,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -32,7 +32,7 @@ const setting = {
     // 部分课件存在无检测机制问题,会尝试自动关闭保险模式
     自动关闭保险模式: true,
     /*影响刷课速度关键选项,延时非最优解,过慢请自行谨慎调整*/
-    最高延迟响应时间: 5000,//毫秒
+    最高延迟响应时间: 4000,//毫秒
     最低延迟响应时间: 3000,//毫秒
     组件等待时间: 1500,//毫秒 组件包括视频播放器,JQuery等,视网络,设备性能而定,启动失败则调整
     //0-高清 1-清晰 2-流畅 3-原画
@@ -430,7 +430,8 @@ async function requestMatcher(url, data, that) {
                                 const childList = item.childNodeList;
                                 if (childList && childList.length !== 0) {
                                     const childVaildList = childList.filter(i => {
-                                        if (i.cellType !== 4 && i.fromType !== 4) {
+                                        // if (i.cellType !== 4 && i.fromType !== 4) {
+                                        if (i.cellType !== 4) {
                                             if (setting.激活仅评论并关闭刷课件)
                                                 return true
                                             if (i.stuCellFourPercent !== 100)
@@ -440,7 +441,8 @@ async function requestMatcher(url, data, that) {
                                     });
                                     console.log(childVaildList);
                                     finalData.push(...childVaildList)
-                                } else if (item.cellType !== 4 && item.fromType !== 4) {
+                                    // } else if (item.cellType !== 4 && item.fromType !== 4) {
+                                } else if (item.cellType !== 4) {
                                     if (setting.激活仅评论并关闭刷课件)
                                         finalData.push(item)
                                     else if (item.stuCellPercent !== 100)
