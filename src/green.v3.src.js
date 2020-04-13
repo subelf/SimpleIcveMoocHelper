@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.3.5
+// @version      3.3.7
 // @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,课件秒刷,保险模式,补签,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -33,7 +33,7 @@ const setting = {
     自动关闭保险模式: true,
     /*影响刷课速度关键选项,延时非最优解,过慢请自行谨慎调整*/
     最高延迟响应时间: 4000,//毫秒
-    最低延迟响应时间: 3000,//毫秒
+    最低延迟响应时间: 1500,//毫秒
     组件等待时间: 1500,//毫秒 组件包括视频播放器,JQuery等,视网络,设备性能而定,启动失败则调整
     //0-高清 1-清晰 2-流畅 3-原画
     //感谢tonylu00提供最新实测参数 --0-原画 1-高清 2-清晰 3-流畅
@@ -42,13 +42,14 @@ const setting = {
     视频播放倍速: 2,
     //是否保持静音
     是否保持静音: true,
-    //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置,
     激活仅评论并关闭刷课件: false,//与秒刷模式冲突,需二选一
+    //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置,
     激活所有选项卡的评论: false,
     激活评论选项卡: false,
     激活问答选项卡: false,
     激活笔记选项卡: false,
     激活报错选项卡: false,
+    显示评论数: 1000
 
     /*
     * 📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,
@@ -138,33 +139,35 @@ delayExec(() => {
         case "/study/homework/do.html":
         case "/study/onlineExam/preview.html":
         case "/study/onlineExam/do.html":
+        case "/study/faceTeachInfo/testPreview.html":
             homeworkHandler()
             break;
     }
 
-    if (setting.秒刷模式 && !setting.激活仅评论并关闭刷课件)
-        $(document).ajaxSend((e, xhr, options) => {
+    $(document).ajaxSend((e, xhr, options) => {
+        if (!$.parseParams)
+            $.extend({
+                parseParams: function (e) {
+                    for (var o, i = /([^&=]+)=?([^&]*)/g, n = /\+/g, c = function (e) {
+                        return decodeURIComponent(e.replace(n, " "))
+                    }, r = {}; o = i.exec(e);) {
+                        var f = c(o[1])
+                            , a = c(o[2]);
+                        "[]" === f.substring(f.length - 2) ? (f = f.substring(0, f.length - 2),
+                            (r[f] || (r[f] = [])).push(a)) : r[f] = a
+                    }
+                    return r
+                },
+                htmlencode: function (o) {
+                    return e("<div />").text(o).html()
+                },
+                htmldecode: function (o) {
+                    return e("<div />").html(o).text()
+                }
+            })
+        if (setting.秒刷模式 && !setting.激活仅评论并关闭刷课件)
             if (options.url.indexOf("stuProcessCellLog") > -1) {
-                if (!$.parseParams)
-                    $.extend({
-                        parseParams: function (e) {
-                            for (var o, i = /([^&=]+)=?([^&]*)/g, n = /\+/g, c = function (e) {
-                                return decodeURIComponent(e.replace(n, " "))
-                            }, r = {}; o = i.exec(e);) {
-                                var f = c(o[1])
-                                    , a = c(o[2]);
-                                "[]" === f.substring(f.length - 2) ? (f = f.substring(0, f.length - 2),
-                                    (r[f] || (r[f] = [])).push(a)) : r[f] = a
-                            }
-                            return r
-                        },
-                        htmlencode: function (o) {
-                            return e("<div />").text(o).html()
-                        },
-                        htmldecode: function (o) {
-                            return e("<div />").html(o).text()
-                        }
-                    })
+
                 const params = $.parseParams && $.parseParams(options.data);
                 if (params)
                     options.data = $.param({
@@ -174,7 +177,17 @@ delayExec(() => {
                         studyNewlyPicNum: pageCount
                     })
             }
-        });
+        // 修改评论页数
+        if (options.url.indexOf("getCellCommentData") > -1) {
+            const params = $.parseParams && $.parseParams(options.data);
+            if (params)
+                options.data = $.param({
+                    ...params,
+                    pageSize: setting.显示评论数
+                })
+        }
+    });
+
 }, setting.组件等待时间);
 let lastNum = 10;
 let currentCellData = {};
@@ -187,6 +200,8 @@ let isPassMonit = false;
 
     // 拦截发出的请求
     XMLHttpRequest.prototype.send = function (data) {
+
+        send.apply(this, arguments);
 
         // 学生课件状态检查
         if (data && data.indexOf("studyNewlyTime") >= 0) {
@@ -251,16 +266,17 @@ let isPassMonit = false;
                 console.log(error);
             }
         }
-        send.apply(this, arguments);
     };
 
     // 拦截数据响应
     XMLHttpRequest.prototype.open = function () {
+
+        open.apply(this, arguments);
+
         this.addEventListener("readystatechange", () => {
             if (this.readyState >= 4)
                 requestMatcher(this.responseURL, JSON.parse(this.responseText), this)
         }, false);
-        open.apply(this, arguments);
     };
 })(XMLHttpRequest.prototype.open, XMLHttpRequest.prototype.send);
 
@@ -278,10 +294,7 @@ async function requestMatcher(url, data, that) {
                 const item = data.list && data.list.find(item => item.userId === userId);
                 // 评论已完成
                 console.log("我的评论: ", item);
-                //解决不同机制判断问题
-                if (isFinshed && isUnFinishedTabs.indexOf(true) === -1 && taskStack === 0) {
-                    nextCell()
-                }
+
 
                 switch (data.type) {
                     case 1: {
@@ -335,6 +348,13 @@ async function requestMatcher(url, data, that) {
                     await delayExec(() => {
                         $($(".am-tabs-nav>li a")[tab]).click()
                     })
+                }
+
+
+
+                //解决不同机制判断问题
+                if ((setting.激活仅评论并关闭刷课件||isFinshed) && isUnFinishedTabs.indexOf(true) === -1 && taskStack === 0) {
+                    nextCell()
                 }
             }
             break;
@@ -673,7 +693,7 @@ function mediaHandler() {
         if (player.getState() == "complete") {
             console.log("媒体播放已完成");
             // 评论任务均已完成则跳转
-            if (isUnFinishedTabs.indexOf(true) === -1 && !setting.秒刷模式) {
+            if (isUnFinishedTabs.indexOf(true) === -1) {
                 nextCell()
                 return
             }
@@ -684,7 +704,7 @@ function mediaHandler() {
         player.on("playlistComplete", () => {
             console.log("媒体播放完成");
             // 评论任务均已完成则跳转
-            if (isUnFinishedTabs.indexOf(true) === -1 && !setting.秒刷模式) {
+            if (isUnFinishedTabs.indexOf(true) === -1) {
                 nextCell()
                 return
             }
@@ -921,12 +941,25 @@ const server = setting.自定义题库服务器 || "http://127.0.0.1:5000"
  */
 function searchAnswer(i) {
     // 往前查找同辈元素
-    const question = $($(".qBtn")[i]).prevAll(".e-q-q").text().trim();
+    const qBtn = $($(".qBtn")[i]);
+    const question = qBtn.prevAll(".e-q-q").text().trim();
+    const qBody = qBtn.parents(".e-q-body");
+    const questionType = qBody.data("questiontype");
 
     requestAPI('GET', `${server}/q?q=${question}`, {
         onSuccess: (xhr) => {
             const body = JSON.parse(xhr.responseText)
-            showAnswerListDiv(question, body, i)
+            if(questionType > 3) {
+                showAnswerListDiv(question, body, i);
+            }
+            else {
+                body && body.forEach((item, j) => {
+                    if (item != null) {
+                        let { question, answer, options, msg } = item;
+                        selectAnswer(answer, i);
+                    }
+                });
+            }
         }
     })
 }
@@ -956,7 +989,6 @@ function showAnswerListDiv(questionTitle, data, id) {
                                         </tr>
                                     </thead>
                                     <tbody align="left">
-
                                     </tbody>
                                     <tfoot align="center">
                                     <tr>
@@ -1063,6 +1095,28 @@ function fillAnswer(aID, qId) {
             break;
         case 6:
             $(qBody.find("textarea")[0]).val(answer)
+            break;
+        default:
+            break;
+    }
+}
+
+function selectAnswer(answer, qId) {
+    //todo 后端: 1,2,3
+//    const answer = $(`#${aID}`).val();
+    const qBody = $($(".qBtn")[qId]).parents(".e-q-body");
+    const questionType = qBody.data("questiontype");
+    switch (questionType) {
+        // <!-- 1：单选 2：多选 -->
+        case 1:
+            $(qBody.find(`.e-a-g li:contains('${answer}')`)).click()
+            break;
+        case 2:
+            break;
+        // < !--3：判断题-- >
+        case 3:
+            //默认第一项为正确
+            $(qBody.find(".e-a-g li")[(answer == "√" || answer == "正确" || answer == "对") ? 0 : 1]).click()
             break;
         default:
             break;
