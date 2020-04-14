@@ -33,7 +33,7 @@ const setting = {
     自动关闭保险模式: true,
     /*影响刷课速度关键选项,延时非最优解,过慢请自行谨慎调整*/
     最高延迟响应时间: 4000,//毫秒
-    最低延迟响应时间: 1500,//毫秒
+    最低延迟响应时间: 1200,//毫秒
     组件等待时间: 1500,//毫秒 组件包括视频播放器,JQuery等,视网络,设备性能而定,启动失败则调整
     //0-高清 1-清晰 2-流畅 3-原画
     //感谢tonylu00提供最新实测参数 --0-原画 1-高清 2-清晰 3-流畅
@@ -115,7 +115,7 @@ GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
 });
 GM_registerMenuCommand("📝检查脚本配置", function () {
     alert(`
-    当前版本:绿版 v3.3.4✅
+    当前版本:绿版 v3.3.7✅
     题库:${setting.自定义题库服务器 ? setting.自定义题库服务器 : "❌无"}
     秒刷模式: ${setting.秒刷模式 ? "✅打开" : "❌关闭"}
     保险模式: ${setting.保险模式 ? "✅打开" : "❌关闭"}
@@ -242,7 +242,7 @@ let isPassMonit = false;
                         isFinshed = true
                         const endTime = $.now()
                         // 应对检测需停留 10 秒
-                        if (startTime && (endTime - startTime >= 10000)) {
+                        if (startTime && (endTime - startTime >= 10000 + setting.组件等待时间)) {
                             // 评论任务均已完成则跳转
                             if (isUnFinishedTabs.indexOf(true) === -1) {
                                 nextCell()
@@ -683,7 +683,10 @@ function mediaHandler() {
 
             } else {
                 if (setting.秒刷模式 || isUnFinishedTabs.indexOf(true) === -1) {
-                    nextCell()
+                    //nextCell()
+                    delayExec(() => {
+                        nextCell()
+                    })
                     return
                 }
                 isFinshed = true
@@ -694,7 +697,9 @@ function mediaHandler() {
             console.log("媒体播放已完成");
             // 评论任务均已完成则跳转
             if (isUnFinishedTabs.indexOf(true) === -1) {
-                nextCell()
+                delayExec(() => {
+                    nextCell()
+                })
                 return
             }
             isFinshed = true
