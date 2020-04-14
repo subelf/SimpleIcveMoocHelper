@@ -954,10 +954,7 @@ function searchAnswer(i) {
     requestAPI('GET', `${server}/q?q=${question}`, {
         onSuccess: (xhr) => {
             const body = JSON.parse(xhr.responseText)
-            if(questionType > 3) {
-                showAnswerListDiv(question, body, i);
-            }
-            else {
+            if(questionType <= 3) {
                 body && body.forEach((item, j) => {
                     if (item != null) {
                         let { question, answer, options, msg } = item;
@@ -965,6 +962,7 @@ function searchAnswer(i) {
                     }
                 });
             }
+            showAnswerListDiv(question, body, i);
         }
     })
 }
@@ -1114,9 +1112,15 @@ function selectAnswer(answer, qId) {
     switch (questionType) {
         // <!-- 1：单选 2：多选 -->
         case 1:
-            $(qBody.find(`.e-a-g li:contains('${answer}')`)).click()
-            break;
         case 2:
+            var ansOpts = qBody.find('.e-a-g li div').filter((i, x)=>$(x).text().trim()==answer);
+            //$(ansOpts).click();
+            $(ansOpts).each((i, x)=> {
+                delayExec( ()=>{
+                    $(x).click();
+                },
+                200 * i)
+            });
             break;
         // < !--3：判断题-- >
         case 3:
