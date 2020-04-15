@@ -274,7 +274,7 @@ let isPassMonit = false;
         open.apply(this, arguments);
 
         this.addEventListener("readystatechange", () => {
-            if (this.readyState >= 4)
+            if (this.readyState >= 4 && ['text', ''].includes(this.responseType))
                 requestMatcher(this.responseURL, JSON.parse(this.responseText), this)
         }, false);
     };
