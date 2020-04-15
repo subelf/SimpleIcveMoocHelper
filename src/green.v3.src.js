@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.3.7
+// @version      3.3.8
 // @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,课件秒刷,保险模式,补签,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -115,7 +115,7 @@ GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
 });
 GM_registerMenuCommand("📝检查脚本配置", function () {
     alert(`
-    当前版本:绿版 v3.3.7✅
+    当前版本:绿版 v3.3.8✅
     题库:${setting.自定义题库服务器 ? setting.自定义题库服务器 : "❌无"}
     秒刷模式: ${setting.秒刷模式 ? "✅打开" : "❌关闭"}
     保险模式: ${setting.保险模式 ? "✅打开" : "❌关闭"}
@@ -314,7 +314,7 @@ async function requestMatcher(url, data, that) {
                                     await submitNote()
                                     console.log("已完成笔记提交");
                                 }
-                                isUnFinishedTabs[data.type] = false
+                                isUnFinishedTabs[data.type - 1] = false
                             }
 
                         }
@@ -326,7 +326,7 @@ async function requestMatcher(url, data, that) {
                                     await submitQuestion()
                                     console.log("已完成问答提交");
                                 }
-                                isUnFinishedTabs[data.type - 2] = false
+                                isUnFinishedTabs[data.type - 1] = false
                             }
                         }
                         break;
@@ -343,7 +343,9 @@ async function requestMatcher(url, data, that) {
                         break;
                 }
 
-                const tab = isUnFinishedTabs.indexOf(true);
+                let tab = isUnFinishedTabs.indexOf(true);
+                if (!setting.激活笔记选项卡 && data.type !== 1)
+                    tab -= 1
                 if (tab > -1 && tab + 2 !== data.type) {
                     await delayExec(() => {
                         $($(".am-tabs-nav>li a")[tab]).click()
@@ -353,7 +355,7 @@ async function requestMatcher(url, data, that) {
 
 
                 //解决不同机制判断问题
-                if ((setting.激活仅评论并关闭刷课件||isFinshed) && isUnFinishedTabs.indexOf(true) === -1 && taskStack === 0) {
+                if ((setting.激活仅评论并关闭刷课件 || isFinshed) && isUnFinishedTabs.indexOf(true) === -1 && taskStack === 0) {
                     nextCell()
                 }
             }
@@ -402,7 +404,7 @@ async function requestMatcher(url, data, that) {
                 // 课件类型
                 cellType = data.categoryName
                 // 如果当前课件为遗漏课件则进入下一个课件
-                if (cellPercent === 100) {
+                if (cellPercent === 100 && isUnFinishedTabs.indexOf(true) === -1) {
                     nextCell()
                     return
                 }
@@ -806,10 +808,6 @@ async function submitComment() {
         //提交
         await delayExec(async () => {
             $("#btnComment").click();
-            // await delayExec(() => {
-            //     $(".sgBtn.ok").click();
-            //     console.log("评论成功");
-            // }, setting.组件等待时间);
             resolve()
         });
     })
@@ -826,12 +824,6 @@ async function submitQuestion() {
         await delayExec(async () => {
             $("#btnQuestion").click();
             resolve()
-            // await delayExec(() => {
-            //     $(".sgBtn.ok").click();
-            //     console.log("问答成功");
-            //     resolve()
-            // }, setting.组件等待时间);
-
         }, 60000);
     })
 }
@@ -847,11 +839,6 @@ async function submitNote() {
         await delayExec(async () => {
             $("#btnNote").click();
             resolve()
-            // await delayExec(() => {
-            //     $(".sgBtn.ok").click();
-            //     console.log("笔记成功");
-            //     resolve()
-            // }, setting.组件等待时间);
         });
     })
 }
@@ -867,11 +854,6 @@ async function submitReport() {
         await delayExec(async () => {
             $("#btnCellError").click();
             resolve()
-            // await delayExec(() => {
-            //     $(".sgBtn.ok").click();
-            //     console.log("报错成功");
-            //     resolve()
-            // }, setting.组件等待时间);
         }, 60000);
     })
 }
@@ -896,7 +878,6 @@ function homeworkHandler() {
     uncageCopyLimit()
     if (!setting.自定义题库服务器) {
         alert("未填写题库📝,无法正常使用答题,仅提供破解网站限制")
-        return
     }
     bindBtnToQuestion()
 }
