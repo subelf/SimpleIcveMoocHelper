@@ -425,7 +425,7 @@ async function requestMatcher(url, data, that) {
                 //未在本地找到遗留数据则重新获取
                 if (!localS || localS === "[]" || localS === "null") {
 
-                    if (!confirm("正在获取未完成小节数据,为避免检测,请耐心等待🖥\n✅确定以继续,确认后勿关闭本页\n直到再次弹窗,否则脚本将结束工作"))
+                    if (!confirm("正在获取未完成小节数据,为避免检测,请耐心等待🖥\n✅确定以继续,确认后勿关闭本页\n直到再次弹窗,否则脚本将结束工作\n  ‼️插件仅供提升学习效率减少,繁杂工作,解放双手之用,未利用任何漏洞达成目的,均为网页自动化技术,请健康使用勿要滥用"))
                         return
                     const parentNode = data && data.progress;
                     //过滤已经学习完的课件
