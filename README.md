@@ -1,6 +1,6 @@
 # SimpleIcveMoocHelper
 
-## 一个简单基于油猴+jquery 开发实现的智慧职教MOOC,职教云网课助手
+## 一个简单基于油猴+jquery 开发实现的智慧职教MOOC,职教云自动化网课助手
 
 - 支持自动评论
 
@@ -12,7 +12,7 @@
 
 - 提供窗口用于提取题库 (1.07 added)
 
-- ~~暂不支持答题功能(无题库支撑)~~现已提供答题,有能力的朋友可自行对接
+- ~~暂不支持答题功能(无题库支撑)~~ 现已提供答题,有能力的朋友可自行对接
 
 - 已支持绿版职教云,zjy2(ver 2.0 added)
 
@@ -46,10 +46,6 @@
 
 - 提供课件下载功能(ver 3.1 added)
 
-- 提供秒刷(ver 3.2.14 added)
-
-- 提供补签(ver 3.3.0 added)
-
 - ........
 
 ```js
@@ -62,7 +58,10 @@
      'options':'题目选项,可留空',
      'msg': '消息,可留空'
   },{
-  
+    'question': '问题,可留空',
+     'answer': '答案', //判断题 √为正确,其余为错误
+     'options':'题目选项,可留空',
+     'msg': '消息,可留空'
      }
   ]
 ```
@@ -94,7 +93,7 @@
 | 测试浏览器 | Chrome                                                                                     | Chrome                                                                                          | Chromium 80(低版本不兼容)                                                                  |
 | 已知问题   | 暂无                                                                                       | 暂无                                                                                            | 暂无                                                                                       |
 | 源文件     | [bule.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/blue.src.js) | [green.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/green.v3.src.js) | [cyan.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/cyan.src.js) |
-| 版本       | 1.08                                                                                       | 3.2.16                                                                                          | 0.2(IndexDB)                                                                               |
+| 版本       | 1.08                                                                                       | 3.3.9                                                                                           | 0.2(IndexDB)                                                                               |
 
 ~~大一菜鸡 学习 JS 练手所写, ES5,6 瞎混搭,勿喷~~
 
@@ -114,8 +113,14 @@ ver.2.0 完成时间 : 2019.12.13
 >
 > * 写作之初学习如何写油猴脚本时借鉴了[wyn665817](https://greasyfork.org/zh-CN/scripts/369625-%E8%B6%85%E6%98%9F%E7%BD%91%E8%AF%BE%E5%8A%A9%E6%89%8B)的源码,学习到了宝贵的入门知识,并引用了等待Jquery加载的一段代码
 > * [tonylu00](https://github.com/tonylu00)提供实测视频清晰度参数
-> * @给我一碗蛋炒饭 的签到抓包分析结果
+> * @给我一碗炒饭 的签到抓包分析结果
 
-### **本插件仅供个人学习研究和交流使用，请于下载后二十四小时内删除,勿要滥用,用于商业用途等**
+### 免责声明
 
-> 如作它用所承受的法律责任一概与作者无关（各种途径使用即代表你同意上述观点)
+* 本脚本完全开源免费仅供个人学习研究和交流前端自动化使用，请于下载后二十四小时内删除,勿要滥用,用于商业用途等
+
+* 捐助均为自发行为,未于作者构成任何雇佣或利益交换关系,未用于任何商业盈利活动
+
+* 未经过非法途径或越权漏洞实现自动化,均为常规前端自动化技术
+
+> 如作它用所承受的法律责任一概与作者无关,各种途径使用即代表你**同意**上述观点
