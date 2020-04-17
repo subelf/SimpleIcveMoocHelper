@@ -19,7 +19,7 @@
 'use strict'
 const setting = {
     // true 为打开,false 为关闭
-    // 题库 IP地址 ,可在553行查看对接接口要求
+    // 题库 IP地址 ,可在913行查看对接接口要求
     自定义题库服务器: "",// 协议://IP
     // 随机评论,自行扩充格式如     "你好",     (英文符号)
     随机评论词库: ["........", ".", "...",],
@@ -126,7 +126,7 @@ GM_registerMenuCommand("📝检查脚本配置", function () {
     📝修改配置请找到油猴插件的管理面板
 
     插件仅供提升学习效率减少,繁杂工作,解放双手之用,未利用任何漏洞达成目的,均为网页自动化技术
-    
+
     脚本完全免费开源,遵循 MIT 协议,严禁倒卖,如果您是购买使用请举报售卖者
     `)
 });
@@ -1092,13 +1092,17 @@ function fillAnswer(aID, qId) {
 function selectAnswer(answer, qId) {
     //todo 后端: 1,2,3
 //    const answer = $(`#${aID}`).val();
+    const okvars = ["√", "正确", "对"];
     const qBody = $($(".qBtn")[qId]).parents(".e-q-body");
     const questionType = qBody.data("questiontype");
+    const opts = qBody.find('.e-a-g li')
+    const prxPattern = /[A-Z][\s\n]+/
+
     switch (questionType) {
         // <!-- 1：单选 2：多选 -->
         case 1:
         case 2:
-            var ansOpts = qBody.find('.e-a-g li div').filter((i, x)=>$(x).text().trim()==answer);
+            var ansOpts = opts.filter((i, x)=>$(x).text().trim().replace(prxPattern, '')==answer);
             //$(ansOpts).click();
             $(ansOpts).each((i, x)=> {
                 delayExec( ()=>{
@@ -1110,7 +1114,13 @@ function selectAnswer(answer, qId) {
         // < !--3：判断题-- >
         case 3:
             //默认第一项为正确
-            $(qBody.find(".e-a-g li")[(answer == "√" || answer == "正确" || answer == "对") ? 0 : 1]).click()
+            var isright = okvars.includes(answer);
+            var ansOpts2 = opts2.filter((i, x) => {
+                const optText = $(x).text().trim().replace(prxPattern, '');
+                return okvars.some(v => opt.includes(v)) == isright;
+            });
+            if(ansOpts2.some(x => x)) $(ansOpts2).click();
+            else $(opts[isright ? 0 : 1]).click();
             break;
         default:
             break;
