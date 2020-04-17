@@ -33,7 +33,7 @@ const setting = {
     自动关闭保险模式: true,
     /*影响刷课速度关键选项,延时非最优解,过慢请自行谨慎调整*/
     最高延迟响应时间: 4000,//毫秒
-    最低延迟响应时间: 3000,//毫秒
+    最低延迟响应时间: 1200,//毫秒
     组件等待时间: 1500,//毫秒 组件包括视频播放器,JQuery等,视网络,设备性能而定,启动失败则调整
     //0-高清 1-清晰 2-流畅 3-原画
     //感谢tonylu00提供最新实测参数 --0-原画 1-高清 2-清晰 3-流畅
@@ -143,6 +143,7 @@ delayExec(() => {
         case "/study/homework/do.html":
         case "/study/onlineExam/preview.html":
         case "/study/onlineExam/do.html":
+        case "/study/faceTeachInfo/testPreview.html":
             homeworkHandler()
             break;
     }
@@ -204,6 +205,8 @@ let isPassMonit = false;
     // 拦截发出的请求
     XMLHttpRequest.prototype.send = function (data) {
 
+        send.apply(this, arguments);
+
         // 学生课件状态检查
         if (data && data.indexOf("studyNewlyTime") >= 0) {
             // 关闭错误弹窗
@@ -243,7 +246,7 @@ let isPassMonit = false;
                         isFinshed = true
                         const endTime = $.now()
                         // 应对检测需停留 10 秒
-                        if (startTime && (endTime - startTime >= 10000)) {
+                        if (startTime && (endTime - startTime >= 10000 + setting.组件等待时间)) {
                             // 评论任务均已完成则跳转
                             if (isUnFinishedTabs.indexOf(true) === -1) {
                                 nextCell()
@@ -267,16 +270,17 @@ let isPassMonit = false;
                 console.log(error);
             }
         }
-        send.apply(this, arguments);
     };
 
     // 拦截数据响应
     XMLHttpRequest.prototype.open = function () {
+
+        open.apply(this, arguments);
+
         this.addEventListener("readystatechange", () => {
-            if (this.readyState >= 4)
+            if (this.readyState >= 4 && ['text', ''].includes(this.responseType))
                 requestMatcher(this.responseURL, JSON.parse(this.responseText), this)
         }, false);
-        open.apply(this, arguments);
     };
 })(XMLHttpRequest.prototype.open, XMLHttpRequest.prototype.send);
 
@@ -294,6 +298,7 @@ async function requestMatcher(url, data, that) {
                 const item = data.list && data.list.find(item => item.userId === userId);
                 // 评论已完成
                 console.log("我的评论: ", item);
+
 
                 switch (data.type) {
                     case 1: {
@@ -684,7 +689,10 @@ function mediaHandler() {
 
             } else {
                 if (setting.学神模式 || isUnFinishedTabs.indexOf(true) === -1) {
-                    nextCell()
+                    //nextCell()
+                    delayExec(() => {
+                        nextCell()
+                    })
                     return
                 }
                 isFinshed = true
@@ -695,7 +703,9 @@ function mediaHandler() {
             console.log("媒体播放已完成");
             // 评论任务均已完成则跳转
             if (isUnFinishedTabs.indexOf(true) === -1) {
-                nextCell()
+                delayExec(() => {
+                    nextCell()
+                })
                 return
             }
             isFinshed = true
@@ -921,12 +931,23 @@ const server = setting.自定义题库服务器 || "http://127.0.0.1:5000"
  */
 function searchAnswer(i) {
     // 往前查找同辈元素
-    const question = $($(".qBtn")[i]).prevAll(".e-q-q").text().trim();
+    const qBtn = $($(".qBtn")[i]);
+    const question = qBtn.prevAll(".e-q-q").text().trim();
+    const qBody = qBtn.parents(".e-q-body");
+    const questionType = qBody.data("questiontype");
 
     requestAPI('GET', `${server}/q?q=${question}`, {
         onSuccess: (xhr) => {
             const body = JSON.parse(xhr.responseText)
-            showAnswerListDiv(question, body, i)
+            if(questionType <= 3) {
+                body && body.forEach((item, j) => {
+                    if (item != null) {
+                        let { question, answer, options, msg } = item;
+                        selectAnswer(answer, i);
+                    }
+                });
+            }
+            showAnswerListDiv(question, body, i);
         }
     })
 }
@@ -1062,6 +1083,34 @@ function fillAnswer(aID, qId) {
             break;
         case 6:
             $(qBody.find("textarea")[0]).val(answer)
+            break;
+        default:
+            break;
+    }
+}
+
+function selectAnswer(answer, qId) {
+    //todo 后端: 1,2,3
+//    const answer = $(`#${aID}`).val();
+    const qBody = $($(".qBtn")[qId]).parents(".e-q-body");
+    const questionType = qBody.data("questiontype");
+    switch (questionType) {
+        // <!-- 1：单选 2：多选 -->
+        case 1:
+        case 2:
+            var ansOpts = qBody.find('.e-a-g li div').filter((i, x)=>$(x).text().trim()==answer);
+            //$(ansOpts).click();
+            $(ansOpts).each((i, x)=> {
+                delayExec( ()=>{
+                    $(x).click();
+                },
+                200 * i)
+            });
+            break;
+        // < !--3：判断题-- >
+        case 3:
+            //默认第一项为正确
+            $(qBody.find(".e-a-g li")[(answer == "√" || answer == "正确" || answer == "对") ? 0 : 1]).click()
             break;
         default:
             break;
