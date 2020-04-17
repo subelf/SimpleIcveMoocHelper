@@ -126,6 +126,8 @@ GM_registerMenuCommand("📝检查脚本配置", function () {
     📝修改配置请找到油猴插件的管理面板
 
     插件仅供提升学习效率减少,繁杂工作,解放双手之用,未利用任何漏洞达成目的,均为网页自动化技术
+    
+    脚本完全免费开源,遵循 MIT 协议,严禁倒卖,如果您是购买使用请举报售卖者
     `)
 });
 
@@ -425,7 +427,7 @@ async function requestMatcher(url, data, that) {
                 //未在本地找到遗留数据则重新获取
                 if (!localS || localS === "[]" || localS === "null") {
 
-                    if (!confirm("正在获取未完成小节数据,为避免检测,请耐心等待🖥\n✅确定以继续,确认后勿关闭本页\n直到再次弹窗,否则脚本将结束工作\n  ‼️插件仅供提升学习效率减少,繁杂工作,解放双手之用,未利用任何漏洞达成目的,均为网页自动化技术,请健康使用勿要滥用"))
+                    if (!confirm("正在获取未完成小节数据,为避免检测,请耐心等待🖥\n✅确定以继续,确认后勿关闭本页\n直到再次弹窗,否则脚本将结束工作\n  ‼️插件仅供提升学习效率减少,繁杂工作,解放双手之用,未利用任何漏洞达成目的,均为网页自动化技术,请健康使用勿要滥用\n"))
                         return
                     const parentNode = data && data.progress;
                     //过滤已经学习完的课件
@@ -503,7 +505,7 @@ function nextCell() {
     sessionStorage.setItem(classId, JSON.stringify(surplusData))
 
     if (surplusData && surplusData.length === 0) {
-        alert("课程已完成")
+        alert("课程已完成\n脚本完全免费开源,遵循 MIT 协议,严禁倒卖,如果您是购买使用请举报售卖者")
         return
     }
 
