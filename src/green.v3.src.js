@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.3.8
-// @description  职教云刷课刷题助手脚本,中文化自定义各项参数,自动课件,课件秒刷,保险模式,补签,解除作业区复制粘贴限制,无限制下载课件,支持考试,自动三项评论,智能讨论,搜题填题,软件定制
+// @version      3.3.10
+// @description  职教云学习效率提升助手小脚本,中文化自定义各项参数,自动课件,课件一目十行,保险模式,解除Ctrl+C限制,下载课件,自动三项评论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
 // @grant        unsafeWindow
@@ -23,8 +23,8 @@ const setting = {
     自定义题库服务器: "",// 协议://IP
     // 随机评论,自行扩充格式如     "你好",     (英文符号)
     随机评论词库: ["........", ".", "...",],
-    // 刺激!秒刷课件,风险未知,暂知时长不良 打开需关闭仅评论
-    秒刷模式: false,
+    // 刺激!风险未知,暂知时长不良 打开需关闭仅评论
+    学神模式: false,
     // 稳!保证文档类与网站请求保持同步,因此速度较慢,实测可以不用这么严格,默认打开
     保险模式: false,//如果课件始终不跳下一个,请勿打开该项
     //是否打开课件下载
@@ -42,7 +42,7 @@ const setting = {
     视频播放倍速: 2,
     //是否保持静音
     是否保持静音: true,
-    激活仅评论并关闭刷课件: false,//与秒刷模式冲突,需二选一
+    激活仅评论: false,//与学神模式冲突,需二选一
     //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置,
     激活所有选项卡的评论: false,
     激活评论选项卡: false,
@@ -115,15 +115,19 @@ GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
 });
 GM_registerMenuCommand("📝检查脚本配置", function () {
     alert(`
-    当前版本:绿版 v3.3.8✅
+    当前版本:绿版 v3.3.9✅
     题库:${setting.自定义题库服务器 ? setting.自定义题库服务器 : "❌无"}
-    秒刷模式: ${setting.秒刷模式 ? "✅打开" : "❌关闭"}
+    学神模式: ${setting.学神模式 ? "✅打开" : "❌关闭"}
     保险模式: ${setting.保险模式 ? "✅打开" : "❌关闭"}
-    仅评论模式: ${setting.激活仅评论并关闭刷课件 ? "✅打开" : "❌关闭"}
+    仅评论模式: ${setting.激活仅评论 ? "✅打开" : "❌关闭"}
     当前组件响应时间(秒):${setting.组件等待时间 % (1000 * 60) / 1000}
     当前评论库: [ ${setting.随机评论词库} ]
     已激活的评论选项卡:${((setting.激活所有选项卡的评论 || setting.激活评论选项卡) ? "评论;" : "") + ((setting.激活所有选项卡的评论 || setting.激活问答选项卡) ? "问答;" : "") + ((setting.激活所有选项卡的评论 || setting.激活笔记选项卡) ? "笔记;" : "") + ((setting.激活所有选项卡的评论 || setting.激活报错选项卡) ? "报错" : "")}\n
     📝修改配置请找到油猴插件的管理面板
+
+    插件仅供提升学习效率减少,繁杂工作,解放双手之用,未利用任何漏洞达成目的,均为网页自动化技术
+    
+    脚本完全免费开源,遵循 MIT 协议,严禁倒卖,如果您是购买使用请举报售卖者
     `)
 });
 
@@ -165,7 +169,7 @@ delayExec(() => {
                     return e("<div />").html(o).text()
                 }
             })
-        if (setting.秒刷模式 && !setting.激活仅评论并关闭刷课件)
+        if (setting.学神模式 && !setting.激活仅评论)
             if (options.url.indexOf("stuProcessCellLog") > -1) {
 
                 const params = $.parseParams && $.parseParams(options.data);
@@ -211,13 +215,13 @@ let isPassMonit = false;
             try {
                 isPassMonit = true
                 autoCloseDialog()
-                if (!setting.激活仅评论并关闭刷课件) {
+                if (!setting.激活仅评论) {
                     let readedNum = parseInt(getQueryValue("studyNewlyPicNum", "?" + data));
                     // 四舍五入留两位与服务器计时同步
                     const readedTime = Math.round(parseFloat(getQueryValue("studyNewlyTime", "?" + data)) * 100) / 100;
                     const picNum = parseInt(getQueryValue("picNum", "?" + data))
                     // 非媒体课件下启动
-                    if ((!readedTime || setting.秒刷模式) && !startTime)
+                    if ((!readedTime || setting.学神模式) && !startTime)
                         startTime = $.now()
                     // 纠正空课件监控问题
                     if (pageCount === 1)
@@ -238,7 +242,7 @@ let isPassMonit = false;
                     }
 
                     // 判断当前课件是否已结束
-                    if ((readedNum && pageCount && (readedNum >= pageCount)) || setting.秒刷模式) {
+                    if ((readedNum && pageCount && (readedNum >= pageCount)) || setting.学神模式) {
                         isFinshed = true
                         const endTime = $.now()
                         // 应对检测需停留 10 秒
@@ -355,7 +359,7 @@ async function requestMatcher(url, data, that) {
 
 
                 //解决不同机制判断问题
-                if ((setting.激活仅评论并关闭刷课件 || isFinshed) && isUnFinishedTabs.indexOf(true) === -1 && taskStack === 0) {
+                if ((setting.激活仅评论 || isFinshed) && isUnFinishedTabs.indexOf(true) === -1 && taskStack === 0) {
                     nextCell()
                 }
             }
@@ -369,7 +373,7 @@ async function requestMatcher(url, data, that) {
                 }
 
                 autoCloseDialog()
-                if (setting.激活仅评论并关闭刷课件) {
+                if (setting.激活仅评论) {
                     console.log("仅开启评论已打开");
                     // commentHandler()
                     return
@@ -428,12 +432,12 @@ async function requestMatcher(url, data, that) {
                 //未在本地找到遗留数据则重新获取
                 if (!localS || localS === "[]" || localS === "null") {
 
-                    if (!confirm("正在获取未完成小节数据,为避免检测,请耐心等待🖥\n✅确定以继续,确认后勿关闭本页\n直到再次弹窗,否则脚本将结束工作"))
+                    if (!confirm("正在获取未完成小节数据,为避免检测,请耐心等待🖥\n✅确定以继续,确认后勿关闭本页\n直到再次弹窗,否则脚本将结束工作\n  ‼️插件仅供提升学习效率减少,繁杂工作,解放双手之用,未利用任何漏洞达成目的,均为网页自动化技术,请健康使用勿要滥用\n"))
                         return
                     const parentNode = data && data.progress;
                     //过滤已经学习完的课件
                     let dirs = parentNode && parentNode.moduleList.filter(item => item.percent !== 100)
-                    if (setting.激活仅评论并关闭刷课件)
+                    if (setting.激活仅评论)
                         dirs = parentNode.moduleList
                     //请求课程所有数据
                     const orginalData = (await sendIcveRequest(urls2.courseView_getCourseDetailList)).courseProcessInfo
@@ -454,7 +458,7 @@ async function requestMatcher(url, data, that) {
                                     const childVaildList = childList.filter(i => {
                                         // if (i.cellType !== 4 && i.fromType !== 4) {
                                         if (i.cellType !== 4) {
-                                            if (setting.激活仅评论并关闭刷课件)
+                                            if (setting.激活仅评论)
                                                 return true
                                             if (i.stuCellFourPercent !== 100)
                                                 return true
@@ -465,7 +469,7 @@ async function requestMatcher(url, data, that) {
                                     finalData.push(...childVaildList)
                                     // } else if (item.cellType !== 4 && item.fromType !== 4) {
                                 } else if (item.cellType !== 4) {
-                                    if (setting.激活仅评论并关闭刷课件)
+                                    if (setting.激活仅评论)
                                         finalData.push(item)
                                     else if (item.stuCellPercent !== 100)
                                         finalData.push(item)
@@ -506,7 +510,7 @@ function nextCell() {
     sessionStorage.setItem(classId, JSON.stringify(surplusData))
 
     if (surplusData && surplusData.length === 0) {
-        alert("课程已完成")
+        alert("课程已完成\n脚本完全免费开源,遵循 MIT 协议,严禁倒卖,如果您是购买使用请举报售卖者")
         return
     }
 
@@ -519,7 +523,7 @@ function nextCell() {
 
 /**
  * 补签
- *  借鉴 @一碗炒冷饭 同学的抓包分析结果
+ * @给我一碗炒饭 同学的抓包分析结果
  */
 function appendSign(list) {
     const noSignBtns = $("p:contains('未参与')").closest(".np-hw-status");
@@ -584,7 +588,7 @@ function sendIcveRequest(url, data = {}) {
  */
 function cellHandlerMatcher() {
 
-    if (!setting.激活仅评论并关闭刷课件)
+    if (!setting.激活仅评论)
         switch (cellType) {
             case "图片":
             case "文档":
@@ -684,7 +688,7 @@ function mediaHandler() {
                 }, setting.组件等待时间);
 
             } else {
-                if (setting.秒刷模式 || isUnFinishedTabs.indexOf(true) === -1) {
+                if (setting.学神模式 || isUnFinishedTabs.indexOf(true) === -1) {
                     //nextCell()
                     delayExec(() => {
                         nextCell()
