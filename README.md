@@ -1,7 +1,6 @@
-# SimpleIcveMoocHelper
-
 # 暂时停止维护
-## 抵制无道德随意 COPY 篡改脚本信息者,请顺手举报司马篡改脚本者
+
+# SimpleIcveMoocHelper
 
 ## 一个简单基于油猴+jquery 开发实现的智慧职教MOOC,职教云自动化网课助手
 
