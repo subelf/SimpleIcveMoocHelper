@@ -1,8 +1,8 @@
-# 暂时停止维护
+# 停止维护
 
-# SimpleIcveMoocHelper
+## SimpleIcveMoocHelper
 
-## 一个简单基于油猴+jquery 开发实现的智慧职教MOOC,职教云自动化网课助手
+### 一个简单基于油猴+jquery 开发实现的智慧职教MOOC,职教云自动化网课助手
 
 - 支持自动评论
 
