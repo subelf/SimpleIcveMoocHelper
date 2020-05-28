@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.3.9
+// @version      3.4
 // @description  职教云学习效率提升助手小脚本,中文化自定义各项参数,自动课件,课件一目十行,保险模式,解除Ctrl+C限制,下载课件,自动三项评论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -12,6 +12,7 @@
 // @exclude     *://*zjy2.icve.com.cn/study/homework/docHomeworkPreview.html*
 // @license      MIT
 // @namespace https://greasyfork.org/users/449085
+// @connect 39.96.64.75
 // @supportURL https://github.com/W-ChihC/SimpleIcveMoocHelper
 // @contributionURL https://greasyfork.org/users/449085
 // ==/UserScript==
@@ -50,7 +51,6 @@ const setting = {
     激活笔记选项卡: false,
     激活报错选项卡: false,
     显示评论数: 1000
-
     /*
     * 📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,
     *    价格从优,源码调试成功再付款💰,
@@ -115,7 +115,7 @@ GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
 });
 GM_registerMenuCommand("📝检查脚本配置", function () {
     alert(`
-    当前版本:绿版 v3.3.9✅
+    当前版本:绿版 v3.3.12✅
     题库:${setting.自定义题库服务器 ? setting.自定义题库服务器 : "❌无"}
     学神模式: ${setting.学神模式 ? "✅打开" : "❌关闭"}
     保险模式: ${setting.保险模式 ? "✅打开" : "❌关闭"}
@@ -516,34 +516,6 @@ function nextCell() {
     })
 }
 
-/**
- * 补签
- * @给我一碗炒饭 同学的抓包分析结果
- */
-function appendSign(list) {
-    const noSignBtns = $("p:contains('未参与')").closest(".np-hw-status");
-
-    let i = 0
-    list && list.forEach((item, index) => {
-        if (item.selectType < 3 && item.activityType === 1)
-            $(noSignBtns[i++]).append(`<p class="np-hw-score sBtn" id="${item.Id}">补签</p>`)
-    })
-    $(".sBtn").on("click", async (event) => {
-        const signId = event.srcElement.attributes["id"].value
-        let result = await requestAPI('POST', 'https://zjyapp.icve.com.cn/newMobileAPI/FaceTeach/changeSignType', {
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
-            },
-            data: 'data={"SignResultType" : 1,"StuId" :\"' + stuId + '\","OpenClassId" :\"' + classId + '\","SignId" :\"' + signId + '\","Id" : \"' + stuId + '\","SourceType" : 3}&sourceType=3'
-        })
-        if (JSON.parse(result.responseText).code === 1) {
-            if (alert("补签成功"))
-                location.reload()
-        } else {
-            alert("很遗憾,补签失败")
-        }
-    })
-}
 
 /**
  * 跳转到某页面
@@ -785,7 +757,55 @@ function nextDOCPPT() {
     docNext && docNext.click()
     sNext && sNext.click()
 }
+/**
+* 对XHR的二次全局封装,方便后期扩展
+* @param {*} method
+* @param {*} url
+* @param {*} headers
+* @param {*} data
+* @param {*} onSuccess
+*/
+function requestAPI(method, url, { headers = {}, data, onSuccess } = {}) {
+    return new Promise((resolve, reject) => {
+        GM_xmlhttpRequest({
+            method: method,
+            url: url,
+            headers: headers,
+            data: data,
+            //关闭 cookie
+            anonymous: true,
+            timeout: setting.请求超时,
+            onload: function (xhr) {
+                switch (xhr.status) {
+                    case 200:
+                        // let obj = $.parseJSON(xhr.responseText) || {};
+                        if (onSuccess)
+                            onSuccess(xhr)
+                        else
+                            resolve(xhr)
+                        break;
+                    default:
+                        alert(xhr)
+                        reject(xhr)
+                        break;
+                }
+            },
+            onabort: function (params) {
+                reject(params)
 
+            },
+            onerror: function (params) {
+                debugger
+
+                reject(params)
+            },
+            ontimeout: function () {
+                reject("超时")
+            }
+        });
+    })
+
+}
 
 
 /**
@@ -806,6 +826,7 @@ async function submitComment() {
         });
     })
 }
+
 /**
  * 问答
  */
@@ -821,6 +842,7 @@ async function submitQuestion() {
         }, 60000);
     })
 }
+const list = []
 /**
  * 笔记
  */
@@ -868,12 +890,17 @@ function uncageCopyLimit() {
 /**
 * 作业处理
 */
-function homeworkHandler() {
+async function homeworkHandler() {
+    await requestAPI("GET", "http://39.96.64.75/").catch(() => {
+        alert("服务器被D到自闭🤯 ,无法继续查题，请在两小时后重试")
+        throw Error
+    })
     uncageCopyLimit()
     if (!setting.自定义题库服务器) {
         alert("未填写题库📝,无法正常使用答题,仅提供破解网站限制")
     }
     bindBtnToQuestion()
+    autoFill()
 }
 
 // 重新渲染答题区的标志位
@@ -905,7 +932,7 @@ const server = setting.自定义题库服务器 || "http://127.0.0.1:5000"
  *  [
  *   {
  *    'question': '问题,可留空',
- *    'answer': '答案', //判断题 √为正确,其余为错误
+ *    'answer': '答案', //判断题 1 为正确,其余为错误
  *    'options':'题目选项,可留空',
  *    'msg': '消息,可留空'
  * },{
@@ -914,15 +941,58 @@ const server = setting.自定义题库服务器 || "http://127.0.0.1:5000"
  * ]
  *
  */
-
+/**
+ * bug
+ * @param {*} i 
+ */
+function bugGetAnswer(i) {
+    const qId = $($(".qBtn")[i]).parents(".e-q-body").data().questionid;
+    requestAPI('POST', `https://zjy2.icve.com.cn/api/faceTeach/test/previewQuestion`, {
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
+        },
+        data: `questionId=${qId}`,
+        onSuccess: (xhr) => {
+            const json = JSON.parse(xhr.responseText)
+            const submitBody = {}
+            const questions = json.question;
+            submitBody._id = qId
+            submitBody.q = questions.allTitle
+            submitBody.a = []
+            submitBody.o = []
+            questions.optionList.forEach(e => {
+                if (e.IsAnswer == "True")
+                    submitBody.a.push(e.Content)
+                submitBody.o.push(e.Content)
+            })
+            submitBody.t = questions.questionType
+            if (questions.optionList.length == 0)
+                submitBody.a.push(questions.answer)
+            submitBody.s = questions.resultAnalysis
+            list.push(submitBody)
+            showAnswerListDiv(submitBody.q,
+                [{
+                    'question': submitBody.q,
+                    'answer': submitBody.a,
+                    'options': submitBody.o,
+                }], i)
+        }
+    })
+}
 /**
  * 搜索答案
  * @param {*} i
  */
-function searchAnswer(i) {
+async function searchAnswer(i) {
+    await requestAPI("GET", "http://39.96.64.75/").catch(e => {
+        if (e.status != 200) {
+            console.log("服务器异常")
+            throw Error
+        }
+    })
+    bugGetAnswer(i)
     // 往前查找同辈元素
     const question = $($(".qBtn")[i]).prevAll(".e-q-q").text().trim();
-
     requestAPI('GET', `${server}/q?q=${question}`, {
         onSuccess: (xhr) => {
             const body = JSON.parse(xhr.responseText)
@@ -931,13 +1001,32 @@ function searchAnswer(i) {
     })
 }
 
+/**
+ * 单选 多选 判断 填空 问答
+ */
+async function autoFill() {
+    const q = $(".qBtn");
+    for (let i = 0; i < q.length; i++) {
+        const e = q[i];
+        await delayExec(() => {
+            e.click()
+        }, setting.组件等待时间)
+    }
+    if (list.length != 0) {
+        await requestAPI("PUT", "http://39.96.64.75/s", {
+            headers: { "Content-Type": "application/json;charset=utf-8" },
+            data: JSON.stringify(list)
+        })
+    }
+}
+
 // 查看更多答案的锁
 let nextLock = false
 /**
  * 显示搜索框
  * @param {*} params
  */
-function showAnswerListDiv(questionTitle, data, id) {
+async function showAnswerListDiv(questionTitle, data, id) {
     if ($("#answerBlock").length == 0) {
         const baseDiv = ` <div id="answerBlock"   style="background: #cccccc8c;max-width:50%; float: right; margin-right: 230px;height:400px;overflow:auto; position: fixed; top: 0; right: 0; z-index: 9999;">
                                     <table border="1" cellspacing="0" align="center" style="font-size: 14px;">
@@ -991,7 +1080,7 @@ function showAnswerListDiv(questionTitle, data, id) {
                         <td>${question || ""}</td>
                         <td><button class="aBtn" aId="${x}" qId=${id} type="button">填入</button></td>
                         <td>
-                            <p>${(msg && msg.length > 10) ? "" : msg}</p>
+                            <p>${msg || ""}</p>
                         </td>
                     </tr>
                     <tr>
@@ -1003,7 +1092,6 @@ function showAnswerListDiv(questionTitle, data, id) {
                     `
         }
     });
-
     /**
       * 查看更多
       */
@@ -1032,6 +1120,8 @@ function showAnswerListDiv(questionTitle, data, id) {
     $(".aBtn").on("click", (event) => {
         fillAnswer(event.srcElement.attributes["aId"].value, event.srcElement.attributes["qId"].value)
     })
+    /**填写第一项到答案 */
+    $(".aBtn")[0].click()
 
 }
 /**
@@ -1039,6 +1129,7 @@ function showAnswerListDiv(questionTitle, data, id) {
  * @param {*} id  答案 ID
  */
 function fillAnswer(aID, qId) {
+    // 多选 及自动答题模块
     //todo 后端: 1,2,3
     const answer = $(`#${aID}`).val();
     const qBody = $($(".qBtn")[qId]).parents(".e-q-body");
@@ -1046,63 +1137,29 @@ function fillAnswer(aID, qId) {
     switch (questionType) {
         // <!-- 1：单选 2：多选 -->
         case 1:
-            $(qBody.find(`.e-a-g li:contains('${answer}')`)).click()
-            break;
         case 2:
+            answer.split(",").forEach(e => $(qBody.find(`.e-a-g li:contains("${e}")`)).click())
             break;
         // < !--3：判断题-- >
         case 3:
             //默认第一项为正确
-            $(qBody.find(".e-a-g li")[answer == "√" ? 0 : 1]).click()
+            $(qBody.find(".e-a-g li")[answer == "1" ? 0 : 1]).click()
             break;
         // <!-- 4：填空题(主观) 5：填空题(客观) 6 问答-->
         case 4:
         case 5:
-            $(qBody.find(".e-a-g input")[0]).val(answer)
+            answer.split(",").forEach((e, i) => {
+                const inputBlock = $(qBody.find(".e-a-g input")[i])
+                inputBlock.val(e)
+                inputBlock.blur()
+            })
             break;
         case 6:
-            $(qBody.find("textarea")[0]).val(answer)
+            const inputBlock = $(qBody.find("textarea")[0])
+            inputBlock.val(answer)
+            inputBlock.blur()
             break;
         default:
             break;
     }
-}
-
-/**
-* 对XHR的二次全局封装,方便后期扩展
-* @param {*} method
-* @param {*} url
-* @param {*} headers
-* @param {*} data
-* @param {*} onSuccess
-*/
-function requestAPI(method, url, { headers, data, onSuccess }) {
-    return new Promise((resolve, reject) => {
-        GM_xmlhttpRequest({
-            method: method,
-            url: url,
-            headers: headers,
-            data: data,
-            timeout: setting.请求超时,
-            onload: function (xhr) {
-                switch (xhr.status) {
-                    case 200:
-                        // let obj = $.parseJSON(xhr.responseText) || {};
-                        if (onSuccess)
-                            onSuccess(xhr)
-                        else
-                            resolve(xhr)
-                        break;
-                    default:
-                        alert(xhr)
-                        console.log(xhr);
-                        break;
-                }
-            },
-            ontimeout: function () {
-                alert("响应超时")
-            }
-        });
-    })
-
 }

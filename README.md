@@ -2,6 +2,8 @@
 
 ## SimpleIcveMoocHelper
 
+> 务必保证浏览器为各内核最新版，所用API均为激进调用，兼容？这脚本纯粹练手，啥新用啥，这辈子都不可能考虑兼容的
+
 ### 一个简单基于油猴+jquery 开发实现的智慧职教MOOC,职教云自动化网课助手
 
 - 支持自动评论
@@ -46,6 +48,8 @@
 
 - 提供课件下载功能(ver 3.1 added)
 
+- 支持单选，多选，判断，填空，问答，同时也希望职教云团队能有点专业素养,各种越权,无权API层出不穷（ver 3.4 added）
+
 - ........
 
 ```js
@@ -89,9 +93,9 @@
 | ---------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | 网站版本   | MOOC [蓝版](https://mooc.icve.com.cn/profile.html)                                         | 职教云  [绿版](https://zjy2.icve.com.cn)                                                        | 智慧职教学习中心[青版](https://www.icve.com.cn/study/)                                     |
 | 测试浏览器 | Chrome                                                                                     | Chrome                                                                                          | Chromium 80(低版本不兼容)                                                                  |
-| 已知问题   | 暂无                                                                                       | 暂无                                                                                            | 暂无                                                                                       |
+| 已知问题   | 能否运行，看脸                                                                             | 能否运行，是                                                                                    | 能否运行，是                                                                               |
 | 源文件     | [bule.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/blue.src.js) | [green.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/green.v3.src.js) | [cyan.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/cyan.src.js) |
-| 版本       | 1.08                                                                                       | 3.3.9                                                                                           | 0.2(IndexDB)                                                                               |
+| 版本       | 1.08                                                                                       | 3.4                                                                                             | 0.2(IndexDB)                                                                               |
 
 ~~大一菜鸡 学习 JS 练手所写, ES5,6 瞎混搭,勿喷~~
 
@@ -109,7 +113,6 @@ ver.2.0 完成时间 : 2019.12.13
 >
 > * 写作之初学习如何写油猴脚本时借鉴了[wyn665817](https://greasyfork.org/zh-CN/scripts/369625-%E8%B6%85%E6%98%9F%E7%BD%91%E8%AF%BE%E5%8A%A9%E6%89%8B)的源码,学习到了宝贵的入门知识,并引用了等待Jquery加载的一段代码
 > * [tonylu00](https://github.com/tonylu00)提供实测视频清晰度参数
-> * @给我一碗炒饭 的签到抓包分析结果
 
 ### 免责声明
 
