@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.4.1
+// @version      3.4.2
 // @description  职教云学习效率提升助手小脚本,中文化自定义各项参数,自动课件,课件一目十行,保险模式,解除Ctrl+C限制,下载课件,自动三项评论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -124,7 +124,7 @@ GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
 });
 GM_registerMenuCommand("📝检查脚本配置", function () {
     alert(`
-    当前版本:绿版 v3.4.1✅
+    当前版本:绿版 v3.4.2✅
     题库:${setting.自定义题库服务器 ? setting.自定义题库服务器 : "❌无"}
     学神模式: ${setting.学神模式 ? "✅打开" : "❌关闭"}
     保险模式: ${setting.保险模式 ? "✅打开" : "❌关闭"}
@@ -153,6 +153,7 @@ delayExec(() => {
         case "/study/homework/do.html":
         case "/study/onlineExam/preview.html":
         case "/study/onlineExam/do.html":
+        // case "/study/faceTeachInfo/testPreview.html":
             homeworkHandler()
             break;
     }
@@ -805,8 +806,7 @@ function requestAPI(method, url, { headers = {}, data, onSuccess } = {}) {
 
             },
             onerror: function (params) {
-                debugger
-
+                // debugger
                 reject(params)
             },
             ontimeout: function () {
@@ -957,7 +957,11 @@ const server = setting.自定义题库服务器 || "http://127.0.0.1:5000"
  * @param {*} i 
  */
 function bugGetAnswer(i) {
-    const qId = $($(".qBtn")[i]).parents(".e-q-body").data().questionid;
+    let qId = $($(".qBtn")[i]).parents(".e-q-body").data().questionid;
+    if (!qId) {
+        qId = $($(".qBtn")[i]).parents(".e-q-body").data().question;
+    }
+
     requestAPI('POST', `https://zjy2.icve.com.cn/api/faceTeach/test/previewQuestion`, {
         headers: {
             "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
@@ -1008,13 +1012,13 @@ async function searchAnswer(i) {
     })
     bugGetAnswer(i)
     // 往前查找同辈元素
-    const question = $($(".qBtn")[i]).prevAll(".e-q-q").text().trim();
-    requestAPI('GET', `${server}/q?q=${question}`, {
-        onSuccess: (xhr) => {
-            const body = JSON.parse(xhr.responseText)
-            showAnswerListDiv(question, body, i)
-        }
-    })
+    // const question = $($(".qBtn")[i]).prevAll(".e-q-q").text().trim();
+    // requestAPI('GET', `${server}/q?q=${question}`, {
+    // onSuccess: (xhr) => {
+    // const body = JSON.parse(xhr.responseText)
+    // showAnswerListDiv(question, body, i)
+    // }
+    // })
 }
 
 /**
@@ -1103,7 +1107,7 @@ async function showAnswerListDiv(questionTitle, data, id) {
                         <td colspan="3">${options || ""}</td>
                     </tr>
                     <tr>
-                        <td colspan="3"><span>${answer}</span></td>
+                        <td colspan="3"><span  id=${x}>${answer}</span></td>
                     </tr>
                     `
         }
@@ -1148,7 +1152,7 @@ async function showAnswerListDiv(questionTitle, data, id) {
 function fillAnswer(aID, qId) {
     // 多选 及自动答题模块
     //todo 后端: 1,2,3
-    const answer = $(`#${aID}`).val();
+    const answer = $(`#${aID}`).text();
     const qBody = $($(".qBtn")[qId]).parents(".e-q-body");
     const questionType = qBody.data("questiontype");
     switch (questionType) {
