@@ -910,7 +910,8 @@ async function homeworkHandler() {
         alert("未填写题库📝,无法正常使用答题,仅提供解除网站限制")
     }
     bindBtnToQuestion()
-    autoFill()
+    if (setting.自动答题)
+        autoFill()
 }
 
 // 重新渲染答题区的标志位
@@ -983,10 +984,8 @@ function bugGetAnswer(i) {
                     submitBody.a.push(`${e.OptionContent}-${json.answerContentList[e.OptionSelectContent].OptionAnswerContent}`)
                 })
             }
-
             submitBody.s = questions.resultAnalysis
             list.push(submitBody)
-            console.log(submitBody);
             showAnswerListDiv(submitBody.q,
                 [{
                     'question': submitBody.q,
@@ -1137,8 +1136,9 @@ async function showAnswerListDiv(questionTitle, data, id) {
     $(".aBtn").on("click", (event) => {
         fillAnswer(event.srcElement.attributes["aId"].value, event.srcElement.attributes["qId"].value)
     })
-    /**填写第一项到答案 */
-    $(".aBtn")[0].click()
+    if (setting.自动答题)
+        /**填写第一项到答案 */
+        $(".aBtn")[0].click()
 
 }
 /**
