@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.4.4
-// @description  职教云学习效率提升助手小脚本,中文化自定义各项参数,自动课件,课件一目十行,保险模式,解除Ctrl+C限制,下载课件,自动四项评论,搜题填题,软件定制
+// @version      3.4.5
+// @description  职教云学习效率提升助手小脚本,中文化自定义各项参数,自动课件,课件一目十行,保险模式,解除Ctrl+C限制,下载课件,自动四项评论,支持极高正确率的自动答题(作业，测验，考试),搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
 // @grant        unsafeWindow
@@ -13,7 +13,7 @@
 // @license      MIT
 // @namespace https://greasyfork.org/users/449085
 // @connect 39.96.64.75
-// @supportURL https://github.com/W-ChihC/SimpleIcveMoocHelper
+// @supportURL https://tuchg.github.io
 // @contributionURL https://greasyfork.org/users/449085
 // ==/UserScript==
 /*jshint esversion:6 */
@@ -21,7 +21,7 @@
 const setting = {
     // true 为打开,false 为关闭
     // 题库 IP地址 ,可在553行查看对接接口要求
-    自定义题库服务器: "",// 协议://IP
+    自定义题库服务器: "Ｙｅｓ",// 协议://IP
     // 随机评论,自行扩充格式如     "你好",     (英文符号)
     随机评论词库: ["........", ".", "...",],
     // 刺激!风险未知,暂知时长不良 打开需关闭仅评论
@@ -36,7 +36,7 @@ const setting = {
     最高延迟响应时间: 4000,//毫秒
     最低延迟响应时间: 3000,//毫秒
     组件等待时间: 1500,//毫秒 组件包括视频播放器,JQuery,答题等,视网络,设备性能而定,启动失败则调整
-    考试填题时间: 2000,
+    考试填题时间: 2500,
     //0-高清 1-清晰 2-流畅 3-原画
     //感谢tonylu00提供最新实测参数 --0-原画 1-高清 2-清晰 3-流畅
     视频清晰度: 3,
@@ -152,6 +152,7 @@ delayExec(() => {
         //考试
         case "/study/onlineExam/preview.html":
         case "/study/onlineExam/do.html":
+            alert("请勿过快提交,同时也尽量调整脚本考试填题时间设置，过快会被检测然后翻车哦")
             setting.组件等待时间 = setting.考试填题时间
             homeworkHandler()
             break
