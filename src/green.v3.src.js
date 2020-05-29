@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.4.2
-// @description  职教云学习效率提升助手小脚本,中文化自定义各项参数,自动课件,课件一目十行,保险模式,解除Ctrl+C限制,下载课件,自动三项评论,搜题填题,软件定制
+// @version      3.4.3
+// @description  职教云学习效率提升助手小脚本,中文化自定义各项参数,自动课件,课件一目十行,保险模式,解除Ctrl+C限制,下载课件,自动四项评论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
 // @grant        unsafeWindow
@@ -17,13 +17,6 @@
 // @contributionURL https://greasyfork.org/users/449085
 // ==/UserScript==
 /*jshint esversion:6 */
-/**
- * 图片题
- * 
- * 匹配题
- * 
- */
-
 'use strict'
 const setting = {
     // true 为打开,false 为关闭
@@ -40,9 +33,10 @@ const setting = {
     // 部分课件存在无检测机制问题,会尝试自动关闭保险模式
     自动关闭保险模式: true,
     /*影响速度关键选项,延时非最优解,过慢请自行谨慎调整*/
-    最高延迟响应时间: 4000,//毫秒
-    最低延迟响应时间: 3000,//毫秒
-    组件等待时间: 1500,//毫秒 组件包括视频播放器,JQuery,答题等,视网络,设备性能而定,启动失败则调整
+    最高延迟响应时间: 4_000,//毫秒
+    最低延迟响应时间: 3_000,//毫秒
+    组件等待时间: 1_500,//毫秒 组件包括视频播放器,JQuery,答题等,视网络,设备性能而定,启动失败则调整
+    考试填题时间: 2_000,
     //0-高清 1-清晰 2-流畅 3-原画
     //感谢tonylu00提供最新实测参数 --0-原画 1-高清 2-清晰 3-流畅
     视频清晰度: 3,
@@ -124,18 +118,19 @@ GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
 });
 GM_registerMenuCommand("📝检查脚本配置", function () {
     alert(`
-    当前版本:绿版 v3.4.2✅
+    当前版本:绿版 v3.4.3✅
     题库:${setting.自定义题库服务器 ? setting.自定义题库服务器 : "❌无"}
     学神模式: ${setting.学神模式 ? "✅打开" : "❌关闭"}
     保险模式: ${setting.保险模式 ? "✅打开" : "❌关闭"}
     仅评论模式: ${setting.激活仅评论 ? "✅打开" : "❌关闭"}
     自动填题:${setting.自动答题 ? "✅打开" : "❌关闭"}
     当前组件响应时间(秒):${setting.组件等待时间 % (1000 * 60) / 1000}
+    考试填题时间(秒):${setting.考试填题时间 % (1000 * 60) / 1000}
     当前评论库: [ ${setting.随机评论词库} ]
     已激活的评论选项卡:${((setting.激活所有选项卡的评论 || setting.激活评论选项卡) ? "评论;" : "") + ((setting.激活所有选项卡的评论 || setting.激活问答选项卡) ? "问答;" : "") + ((setting.激活所有选项卡的评论 || setting.激活笔记选项卡) ? "笔记;" : "") + ((setting.激活所有选项卡的评论 || setting.激活报错选项卡) ? "报错" : "")}\n
     📝修改配置请找到油猴插件的管理面板
 
-    插件仅供提升学习效率减少,繁杂工作,解放双手之用,未利用任何漏洞达成目的,均为网页自动化技术
+    插件仅供提升学习效率减少,繁杂工作,解放双手之用,未利用任何漏洞达成目的,均为网页自动化测试技术,切勿滥用
 
     脚本完全免费开源,遵循 MIT 协议,严禁倒卖,如果您是购买使用请举报售卖者
     `)
@@ -151,11 +146,15 @@ delayExec(() => {
         //作业区
         case "/study/homework/preview.html":
         case "/study/homework/do.html":
-        case "/study/onlineExam/preview.html":
-        case "/study/onlineExam/do.html":
-        // case "/study/faceTeachInfo/testPreview.html":
+            // case "/study/faceTeachInfo/testPreview.html":
             homeworkHandler()
             break;
+        //考试
+        case "/study/onlineExam/preview.html":
+        case "/study/onlineExam/do.html":
+            setting.组件等待时间 = setting.考试填题时间
+            homeworkHandler()
+            break
     }
 
     $(document).ajaxSend((e, xhr, options) => {
@@ -896,7 +895,33 @@ function uncageCopyLimit() {
 }
 
 
-
+/**
+ * 搜索答案
+ * @param {*} i
+ */
+async function searchAnswer(i) {
+    await requestAPI("GET", "http://39.96.64.75/").catch(e => {
+        if (e.status != 200) {
+            console.log("服务器异常")
+            throw Error
+        }
+    })
+    if (!setting.自动答题) {
+        await requestAPI("PUT", "http://39.96.64.75/s", {
+            headers: { "Content-Type": "application/json;charset=utf-8" },
+            data: JSON.stringify(list)
+        })
+    }
+    bugGetAnswer(i)
+    // 往前查找同辈元素
+    // const question = $($(".qBtn")[i]).prevAll(".e-q-q").text().trim();
+    // requestAPI('GET', `${server}/q?q=${question}`, {
+    // onSuccess: (xhr) => {
+    // const body = JSON.parse(xhr.responseText)
+    // showAnswerListDiv(question, body, i)
+    // }
+    // })
+}
 /**
 * 作业处理
 */
@@ -999,27 +1024,7 @@ function bugGetAnswer(i) {
         }
     })
 }
-/**
- * 搜索答案
- * @param {*} i
- */
-async function searchAnswer(i) {
-    await requestAPI("GET", "http://39.96.64.75/").catch(e => {
-        if (e.status != 200) {
-            console.log("服务器异常")
-            throw Error
-        }
-    })
-    bugGetAnswer(i)
-    // 往前查找同辈元素
-    // const question = $($(".qBtn")[i]).prevAll(".e-q-q").text().trim();
-    // requestAPI('GET', `${server}/q?q=${question}`, {
-    // onSuccess: (xhr) => {
-    // const body = JSON.parse(xhr.responseText)
-    // showAnswerListDiv(question, body, i)
-    // }
-    // })
-}
+
 
 /**
  * 单选 多选 判断 填空 问答
@@ -1050,27 +1055,27 @@ async function showAnswerListDiv(questionTitle, data, id) {
     if ($("#answerBlock").length == 0) {
         const baseDiv = ` <div id="answerBlock"   style="background: #cccccc8c;max-width:50%; float: right; margin-right: 230px;height:400px;overflow:auto; position: fixed; top: 0; right: 0; z-index: 9999;">
                                     <table border="1" cellspacing="0" align="center" style="font-size: 14px;">
-                                    <caption>${questionTitle}</caption>
-                                    <thead>
+                                        <caption>${questionTitle}</caption>
+                                        <thead>
+                                            <tr>
+                                                <th>标题</th>
+                                                <th>填题目📝</th>
+                                                <th>消息</th>
+                                            </tr>
+                                            <tr>
+                                                <th colspan="2">选项</th>
+                                            </tr>
+                                            <tr>
+                                                <th colspan="2">结果</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody align="left">
+                                        </tbody>
+                                        <tfoot align="center">
                                         <tr>
-                                            <th>标题</th>
-                                            <th>填题目📝</th>
-                                            <th>消息</th>
+                                            <td><button type="button" id="nextBtn" >查找更多</a></td>
                                         </tr>
-                                        <tr>
-                                            <th colspan="2">选项</th>
-                                        </tr>
-                                        <tr>
-                                            <th colspan="2">结果</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody align="left">
-                                    </tbody>
-                                    <tfoot align="center">
-                                    <tr>
-                                        <td><button type="button" id="nextBtn" >查找更多</a></td>
-                                    </tr>
-                                </tfoot>
+                                    </tfoot>
                                 </table>
                             </div>`
         $(baseDiv).appendTo("body")
@@ -1107,7 +1112,7 @@ async function showAnswerListDiv(questionTitle, data, id) {
                         <td colspan="3">${options || ""}</td>
                     </tr>
                     <tr>
-                        <td colspan="3"><span  id=${x}>${answer}</span></td>
+                        <td colspan="3"><span  id=${x}>${answer || ""}</span></td>
                     </tr>
                     `
         }
