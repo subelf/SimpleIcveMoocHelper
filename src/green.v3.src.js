@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.4.3
+// @version      3.4.4
 // @description  职教云学习效率提升助手小脚本,中文化自定义各项参数,自动课件,课件一目十行,保险模式,解除Ctrl+C限制,下载课件,自动四项评论,搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -118,7 +118,7 @@ GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
 });
 GM_registerMenuCommand("📝检查脚本配置", function () {
     alert(`
-    当前版本:绿版 v3.4.3✅
+    当前版本:绿版 v3.4.4✅
     题库:${setting.自定义题库服务器 ? setting.自定义题库服务器 : "❌无"}
     学神模式: ${setting.学神模式 ? "✅打开" : "❌关闭"}
     保险模式: ${setting.保险模式 ? "✅打开" : "❌关闭"}
@@ -835,7 +835,25 @@ async function submitComment() {
         });
     })
 }
-
+/**
+ * 单选 多选 判断 填空 问答
+ */
+async function autoFill() {
+    const q = $(".qBtn");
+    for (let i = 0; i < q.length; i++) {
+        const e = q[i];
+        await delayExec(() => {
+            e.click()
+        }, setting.组件等待时间)
+    }
+    if (list.length != 0) {
+        await requestAPI("PUT", "http://39.96.64.75/s", {
+            headers: { "Content-Type": "application/json;charset=utf-8" },
+            data: JSON.stringify(list)
+        })
+        $("#submitHomeWork").click()
+    }
+}
 /**
  * 问答
  */
@@ -1026,25 +1044,46 @@ function bugGetAnswer(i) {
 }
 
 
+
 /**
- * 单选 多选 判断 填空 问答
+ * 填题
+ * @param {*} id  答案 ID
  */
-async function autoFill() {
-    const q = $(".qBtn");
-    for (let i = 0; i < q.length; i++) {
-        const e = q[i];
-        await delayExec(() => {
-            e.click()
-        }, setting.组件等待时间)
-    }
-    if (list.length != 0) {
-        await requestAPI("PUT", "http://39.96.64.75/s", {
-            headers: { "Content-Type": "application/json;charset=utf-8" },
-            data: JSON.stringify(list)
-        })
+function fillAnswer(aID, qId) {
+    // 多选 及自动答题模块
+    //todo 后端: 1,2,3
+    const answer = $(`#${aID}`).text();
+    const qBody = $($(".qBtn")[qId]).parents(".e-q-body");
+    const questionType = qBody.data("questiontype");
+    switch (questionType) {
+        // <!-- 1：单选 2：多选 -->
+        case 1:
+        case 2:
+            answer.split(",").forEach(e => $(qBody.find(`.e-a-g li:contains("${e}")`)).click())
+            break;
+        // < !--3：判断题-- >
+        case 3:
+            //默认第一项为正确
+            $(qBody.find(".e-a-g li")[answer == "1" ? 0 : 1]).click()
+            break;
+        // <!-- 4：填空题(主观) 5：填空题(客观) 6 问答-->
+        case 4:
+        case 5:
+            answer.split(",").forEach((e, i) => {
+                const inputBlock = $(qBody.find(".e-a-g input")[i])
+                inputBlock.val(e)
+                inputBlock.blur()
+            })
+            break;
+        case 6:
+            const inputBlock = $(qBody.find("textarea")[0])
+            inputBlock.val(answer)
+            inputBlock.blur()
+            break;
+        default:
+            break;
     }
 }
-
 // 查看更多答案的锁
 let nextLock = false
 /**
@@ -1149,43 +1188,4 @@ async function showAnswerListDiv(questionTitle, data, id) {
         /**填写第一项到答案 */
         $(".aBtn")[0].click()
 
-}
-/**
- * 填题
- * @param {*} id  答案 ID
- */
-function fillAnswer(aID, qId) {
-    // 多选 及自动答题模块
-    //todo 后端: 1,2,3
-    const answer = $(`#${aID}`).text();
-    const qBody = $($(".qBtn")[qId]).parents(".e-q-body");
-    const questionType = qBody.data("questiontype");
-    switch (questionType) {
-        // <!-- 1：单选 2：多选 -->
-        case 1:
-        case 2:
-            answer.split(",").forEach(e => $(qBody.find(`.e-a-g li:contains("${e}")`)).click())
-            break;
-        // < !--3：判断题-- >
-        case 3:
-            //默认第一项为正确
-            $(qBody.find(".e-a-g li")[answer == "1" ? 0 : 1]).click()
-            break;
-        // <!-- 4：填空题(主观) 5：填空题(客观) 6 问答-->
-        case 4:
-        case 5:
-            answer.split(",").forEach((e, i) => {
-                const inputBlock = $(qBody.find(".e-a-g input")[i])
-                inputBlock.val(e)
-                inputBlock.blur()
-            })
-            break;
-        case 6:
-            const inputBlock = $(qBody.find("textarea")[0])
-            inputBlock.val(answer)
-            inputBlock.blur()
-            break;
-        default:
-            break;
-    }
 }
