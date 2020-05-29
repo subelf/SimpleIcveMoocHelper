@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.4.5
+// @version      3.4.6
 // @description  职教云学习效率提升助手小脚本,中文化自定义各项参数,自动课件,课件一目十行,保险模式,解除Ctrl+C限制,下载课件,自动四项评论,支持极高正确率的自动答题(作业，测验，考试),搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -118,7 +118,7 @@ GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
 });
 GM_registerMenuCommand("📝检查脚本配置", function () {
     alert(`
-    当前版本:绿版 v3.4.4✅
+    当前版本:绿版 v3.4.6✅
     题库:${setting.自定义题库服务器 ? setting.自定义题库服务器 : "❌无"}
     学神模式: ${setting.学神模式 ? "✅打开" : "❌关闭"}
     保险模式: ${setting.保险模式 ? "✅打开" : "❌关闭"}
@@ -785,7 +785,7 @@ function requestAPI(method, url, { headers = {}, data, onSuccess } = {}) {
             data: data,
             //关闭 cookie
             anonymous: true,
-            timeout: setting.请求超时,
+            timeout: 2000,
             onload: function (xhr) {
                 switch (xhr.status) {
                     case 200:
@@ -809,8 +809,8 @@ function requestAPI(method, url, { headers = {}, data, onSuccess } = {}) {
                 // debugger
                 reject(params)
             },
-            ontimeout: function () {
-                reject("超时")
+            ontimeout: function (params) {
+                reject(params)
             }
         });
     })
@@ -910,7 +910,7 @@ function uncageCopyLimit() {
     let arr = ["oncontextmenu", "ondragstart", "onselectstart", "onselect", "oncopy", "onbeforecopy"]
     for (let i of arr)
         $(".hasNoLeft").attr(i, "return true")
-    console.log("已成功复制解除限制,📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,价格从优,源码调试成功再付款💰,实力保证,包远程,包讲解 QQ:2622321887")
+    console.log("已成功解除复制限制,📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,价格从优,源码调试成功再付款💰,实力保证,包远程,包讲解 QQ:2622321887")
 }
 
 
@@ -1024,12 +1024,19 @@ function bugGetAnswer(i) {
                     submitBody.a.push(e.Content)
                 submitBody.o.push(e.Content)
             })
+
             submitBody.t = questions.questionType
             if (questions.optionList.length == 0)
                 submitBody.a.push(questions.answer)
             if (questions.questionType == 7) {
                 json.answerList.forEach((e, i) => {
                     submitBody.a.push(`${e.OptionContent}-${json.answerContentList[e.OptionSelectContent].OptionAnswerContent}`)
+                })
+            }
+            if (submitBody.a.length === 0) {
+                submitBody._id = submitBody._id + "x"
+                questions.questionAnswer.forEach((e, i) => {
+                    submitBody.a.push(questions.optionList[e].Content)
                 })
             }
             submitBody.s = questions.resultAnalysis
