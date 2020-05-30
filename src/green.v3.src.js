@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.4.6
+// @version      3.4.6b0
 // @description  职教云学习效率提升助手小脚本,中文化自定义各项参数,自动课件,课件一目十行,保险模式,解除Ctrl+C限制,下载课件,自动四项评论,支持极高正确率的自动答题(作业，测验，考试),搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -156,7 +156,7 @@ delayExec(() => {
         //考试
         case "/study/onlineExam/preview.html":
         case "/study/onlineExam/do.html":
-            alert("请勿过快提交,同时也尽量调整脚本考试填题时间设置，过快会被检测然后翻车哦")
+            alert("请勿过快提交,同时也尽量调整脚本考试填题时间设置\n答题过快会被检测然后翻车哦")
             setting.组件等待时间 = setting.考试填题时间
             homeworkHandler()
             break
@@ -1035,6 +1035,11 @@ function bugGetAnswer(i) {
             if (questions.questionType == 7) {
                 json.answerList.forEach((e, i) => {
                     submitBody.a.push(`${e.OptionContent}-${json.answerContentList[e.OptionSelectContent].OptionAnswerContent}`)
+                })
+            }
+            if (submitBody.a.length === 0 && questions.questionType === 4) {
+                questions.questionAnswer.forEach(e => {
+                    submitBody.a.push(e)
                 })
             }
             if (submitBody.a.length === 0) {
