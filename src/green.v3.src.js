@@ -856,7 +856,9 @@ async function autoFill() {
             headers: { "Content-Type": "application/json;charset=utf-8" },
             data: JSON.stringify(list)
         })
-        $("#submitHomeWork").click()
+        delayExec(() => {
+            $("#submitHomeWork").click()
+        }, setting.组件等待时间)
     }
 }
 /**
@@ -1072,28 +1074,35 @@ function fillAnswer(aID, qId) {
     const answer = $(`#${aID}`).text();
     const qBody = $($(".qBtn")[qId]).parents(".e-q-body");
     const questionType = qBody.data("questiontype");
+    let inputBlock;
     switch (questionType) {
         // <!-- 1：单选 2：多选 -->
         case 1:
         case 2:
-            answer.split(",").forEach(e => $(qBody.find(`.e-a-g li:contains("${e}")`)).click())
+            answer.split(",").forEach(e => {
+                inputBlock = $(qBody.find(`.e-a-g li:contains("${e}")`));
+                inputBlock.click()
+                inputBlock.focus()
+            })
             break;
         // < !--3：判断题-- >
         case 3:
+            inputBlock = $(qBody.find(".e-a-g li")[answer == "1" ? 0 : 1]);
             //默认第一项为正确
-            $(qBody.find(".e-a-g li")[answer == "1" ? 0 : 1]).click()
+            inputBlock.click()
+            inputBlock.focus()
             break;
         // <!-- 4：填空题(主观) 5：填空题(客观) 6 问答-->
         case 4:
         case 5:
             answer.split(",").forEach((e, i) => {
-                const inputBlock = $(qBody.find(".e-a-g input")[i])
+                inputBlock = $(qBody.find(".e-a-g input")[i])
                 inputBlock.val(e)
                 inputBlock.blur()
             })
             break;
         case 6:
-            const inputBlock = $(qBody.find("textarea")[0])
+            inputBlock = $(qBody.find("textarea")[0])
             inputBlock.val(answer)
             inputBlock.blur()
             break;
