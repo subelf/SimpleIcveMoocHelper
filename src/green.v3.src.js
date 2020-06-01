@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂职教云Icve ☑︎ 智慧职教 ❑ MOOC学院 ❑ --网课兼考试助手 (绿版v3)
-// @version      3.4.6b0
+// @version      3.4.8
 // @description  职教云学习效率提升助手小脚本,中文化自定义各项参数,自动课件,课件一目十行,保险模式,解除Ctrl+C限制,下载课件,自动四项评论,支持极高正确率的自动答题(作业，测验，考试),搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
