@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         云课堂职教云Icve ☑︎ 智慧职教 ❑ MOOC学院 ❑ --网课兼考试助手 (绿版v3)
-// @version      3.4.10
+// @name         云课堂|职教云|Icve --网课兼考试助手 (绿版v3)
+// @version      3.4.14
 // @description  职教云学习效率提升助手小脚本,中文化自定义各项参数,自动课件,课件一目十行,保险模式,解除Ctrl+C限制,下载课件,自动四项评论,支持极高正确率的自动答题(作业，测验，考试),搜题填题,软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -13,6 +13,8 @@
 // @license      MIT
 // @namespace https://greasyfork.org/users/449085
 // @connect 39.96.64.75
+// @connect wk.92e.win
+// @connect qs.nnarea.cn
 // @supportURL https://tuchg.github.io
 // @contributionURL https://greasyfork.org/users/449085
 // ==/UserScript==
@@ -57,7 +59,7 @@ const setting = {
     激活报错选项卡: false,
     显示评论数: 1000,
     //
-    自动答题: true
+    自动答题: false
     /*
     * 📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,
     *    价格从优,源码调试成功再付款💰,
@@ -122,14 +124,14 @@ GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
 });
 GM_registerMenuCommand("📝检查脚本配置", function () {
     alert(`
-    当前版本:绿版 v3.4.10✅
+    当前版本:绿版 v3.4.14✅
     题库:${setting.自定义题库服务器 ? setting.自定义题库服务器 : "❌无"}
     学神模式: ${setting.学神模式 ? "✅打开" : "❌关闭"}
     保险模式: ${setting.保险模式 ? "✅打开" : "❌关闭"}
     仅评论模式: ${setting.激活仅评论 ? "✅打开" : "❌关闭"}
     自动填题:${setting.自动答题 ? "✅打开" : "❌关闭"}
-    当前组件响应时间(秒):${setting.组件等待时间 % (1000 * 60) / 1000}
-    考试填题时间(秒):${setting.考试填题时间 % (1000 * 60) / 1000}
+    当前组件响应时间:${setting.组件等待时间 % (1000 * 60) / 1000} 秒
+    考试填题时间:${setting.考试填题时间 % (1000 * 60) / 1000} 秒
     当前评论库: [ ${setting.随机评论词库} ]
     已激活的评论选项卡:${((setting.激活所有选项卡的评论 || setting.激活评论选项卡) ? "评论;" : "") + ((setting.激活所有选项卡的评论 || setting.激活问答选项卡) ? "问答;" : "") + ((setting.激活所有选项卡的评论 || setting.激活笔记选项卡) ? "笔记;" : "") + ((setting.激活所有选项卡的评论 || setting.激活报错选项卡) ? "报错" : "")}\n
 
@@ -224,6 +226,7 @@ let isPassMonit = false;
         if (data && data.indexOf("studyNewlyTime") >= 0) {
             // 关闭错误弹窗
             $(".sgBtn.ok").click();
+            autoCloseDialog()
 
             try {
                 isPassMonit = true
@@ -801,7 +804,6 @@ function requestAPI(method, url, { headers = {}, data, onSuccess } = {}) {
                             resolve(xhr)
                         break;
                     default:
-                        alert(xhr)
                         reject(xhr)
                         break;
                 }
@@ -841,30 +843,7 @@ async function submitComment() {
         });
     })
 }
-/**
- * 单选 多选 判断 填空 问答
- */
-async function autoFill() {
-    const q = $(".qBtn");
-    for (let i = 0; i < q.length; i++) {
-        const e = q[i];
-        await delayExec(() => {
-            e.click()
-        }, setting.组件等待时间)
-    }
-    if (list.length != 0) {
-        await requestAPI("PUT", "http://39.96.64.75/s", {
-            headers: { "Content-Type": "application/json;charset=utf-8" },
-            data: JSON.stringify(list)
-        })
-        delayExec(() => {
-            if (setting.组件等待时间 === setting.考试填题时间) {
-                alert("如果你不想被老师打零分，就别智障的过快提交")
-            }
-            $("#submitHomeWork").click()
-        }, setting.组件等待时间)
-    }
-}
+
 /**
  * 问答
  */
@@ -925,33 +904,6 @@ function uncageCopyLimit() {
 
 
 /**
- * 搜索答案
- * @param {*} i
- */
-async function searchAnswer(i) {
-    await requestAPI("GET", "http://39.96.64.75/").catch(e => {
-        if (e.status != 200) {
-            console.log("服务器异常")
-            throw Error
-        }
-    })
-    if (!setting.自动答题) {
-        await requestAPI("PUT", "http://39.96.64.75/s", {
-            headers: { "Content-Type": "application/json;charset=utf-8" },
-            data: JSON.stringify(list)
-        })
-    }
-    bugGetAnswer(i)
-    // 往前查找同辈元素
-    // const question = $($(".qBtn")[i]).prevAll(".e-q-q").text().trim();
-    // requestAPI('GET', `${server}/q?q=${question}`, {
-    // onSuccess: (xhr) => {
-    // const body = JSON.parse(xhr.responseText)
-    // showAnswerListDiv(question, body, i)
-    // }
-    // })
-}
-/**
 * 作业处理
 */
 async function homeworkHandler() {
@@ -967,6 +919,157 @@ async function homeworkHandler() {
     if (setting.自动答题)
         autoFill()
 }
+
+let isAutoFilling = false
+/**
+ * 单选 多选 判断 填空 问答
+ */
+async function autoFill() {
+    const q = $(".qBtn");
+    for (let i = 0; i < q.length; i++) {
+        const e = q[i];
+        await delayExec(() => {
+            isAutoFilling = true
+            e.click()
+        }, setting.组件等待时间)
+    }
+    delayExec(() => {
+        if (setting.组件等待时间 === setting.考试填题时间) {
+            alert("如果你不想被老师打零分，就别智障的过快提交")
+        }
+        $("#submitHomeWork").click()
+        isAutoFilling = false
+    }, setting.组件等待时间)
+}
+/**
+ * 搜索答案
+ * @param {*} i
+ */
+async function searchAnswer(i) {
+    // 往前查找同辈元素
+    const question = $($(".qBtn")[i]).prevAll(".e-q-q").text().trim();
+
+    let body = await apiAnswer(question)
+
+    showAnswerListDiv(question, body, i)
+
+    // requestAPI('GET', `${server}/q?q=${question}`, {
+    //     onSuccess: (xhr) => {
+    //         const body = JSON.parse(xhr.responseText)
+    //         showAnswerListDiv(question, body, i)
+    //     }
+    // })
+}
+async function apiAnswer(q) {
+    const _list = []
+    let a1 = requestAPI('GET', `https://wk.92e.win/api/morepng.php?q=${encodeURIComponent(q)}&token=${token(q)}`)
+    let a2 = requestAPI('GET', `http://qs.nnarea.cn/chaoxing_war/topicServlet?action=query&q=${encodeURIComponent(q)}`)
+    let a3 = requestAPI('GET', `https://wk.92e.win/fortest.php?q=${encodeURIComponent(q)}`)
+    let a4 = requestAPI('GET', `https://wk.92e.win/api/tmlib.php?q=${encodeURIComponent(q)}`)
+    let results = await Promise.all([a4, a1, a2, a3])
+    results.forEach(e => {
+        if (e.responseText) {
+            const submitBody = {
+                _id: '',
+                q: '',
+                a: [],
+                o: [],
+                t: -1,
+                s: ""
+            }
+            try {
+                const url = e.finalUrl;
+                if (url.match(/.*qs\.nnarea\.cn/)) {
+                    const json = JSON.parse(e.responseText)
+                    if (json.code == '1') {
+                        submitBody._id = token(new Date().getTime()) + "" + rnd(100, 100000)
+                        submitBody.q = json.question
+                        submitBody.a.push(json.data)
+                        _list.push(submitBody)
+                    }
+                } else {
+                    const json = JSON.parse(e.responseText)
+                    if ((json.code === undefined && json.code !== 0) || json.code === undefined) {
+                        submitBody._id = token(new Date().getTime()) + "" + rnd(100, 100000)
+                        submitBody.q = json.tm
+                        submitBody.a.push(json.answer)
+                        _list.push(submitBody)
+                    }
+                }
+            } catch (e) {
+                console.log(e);
+            }
+            if (_list.length != 0)
+                requestAPI("PUT", "http://39.96.64.75/s", {
+                    headers: { "Content-Type": "application/json;charset=utf-8" },
+                    data: JSON.stringify(_list)
+                })
+        }
+        //todo 需提交
+        // else if (url.match(/.*api\/tmlib/)) {
+        // } else if (url.match(/.*api\/morepng/)) {
+        // } else if (url.match(/.*\/fortest/)) {
+        // }
+    })
+
+    return _list.map(e => {
+        return {
+            'question': e.q,
+            'answer': e.a,
+            'options': e.o,
+        }
+    })
+}
+function encode(s) {
+    var i, r = [], c, x;
+    for (i = 0; i < s.length; i++)
+        if ((c = s.charCodeAt(i)) < 0x80) r.push(c);
+        else if (c < 0x800) r.push(0xC0 + (c >> 6 & 0x1F), 0x80 + (c & 0x3F));
+        else {
+            if ((x = c ^ 0xD800) >> 10 == 0)
+                c = (x << 10) + (s.charCodeAt(++i) ^ 0xDC00) + 0x10000,
+                    r.push(0xF0 + (c >> 18 & 0x7), 0x80 + (c >> 12 & 0x3F));
+            else r.push(0xE0 + (c >> 12 & 0xF));
+            r.push(0x80 + (c >> 6 & 0x3F), 0x80 + (c & 0x3F));
+        };
+    return r;
+}
+
+function token(s) {
+    var data = new Uint8Array(encode(s))
+    var i, j, t;
+    var l = ((data.length + 8) >>> 6 << 4) + 16, s = new Uint8Array(l << 2);
+    s.set(new Uint8Array(data.buffer)), s = new Uint32Array(s.buffer);
+    for (t = new DataView(s.buffer), i = 0; i < l; i++)s[i] = t.getUint32(i << 2);
+    s[data.length >> 2] |= 0x80 << (24 - (data.length & 3) * 8);
+    s[l - 1] = data.length << 3;
+    var w = [], f = [
+        function () { return m[1] & m[2] | ~m[1] & m[3]; },
+        function () { return m[1] ^ m[2] ^ m[3]; },
+        function () { return m[1] & m[2] | m[1] & m[3] | m[2] & m[3]; },
+        function () { return m[1] ^ m[2] ^ m[3]; }
+    ], rol = function (n, c) { return n << c | n >>> (32 - c); },
+        k = [1518500249, 1859775393, -1894007588, -899497514],
+        m = [1732584193, -271733879, null, null, -1009589776];
+    m[2] = ~m[0], m[3] = ~m[1];
+    for (i = 0; i < s.length; i += 16) {
+        var o = m.slice(0);
+        for (j = 0; j < 80; j++)
+            w[j] = j < 16 ? s[i + j] : rol(w[j - 3] ^ w[j - 8] ^ w[j - 14] ^ w[j - 16], 1),
+                t = rol(m[0], 5) + f[j / 20 | 0]() + m[4] + w[j] + k[j / 20 | 0] | 0,
+                m[1] = rol(m[1], 30), m.pop(), m.unshift(t);
+        for (j = 0; j < 5; j++)m[j] = m[j] + o[j] | 0;
+    };
+    t = new DataView(new Uint32Array(m).buffer);
+    for (var i = 0; i < 5; i++)m[i] = t.getUint32(i << 2);
+
+    var hex = Array.prototype.map.call(new Uint8Array(new Uint32Array(m).buffer), function (e) {
+        return (e < 16 ? "0" : "") + e.toString(16);
+    }).join("");
+    return hex;
+}
+
+
 
 // 重新渲染答题区的标志位
 let reRender = false
@@ -1006,65 +1109,6 @@ const server = setting.自定义题库服务器 || "http://127.0.0.1:5000"
  * ]
  *
  */
-/**
- * bug
- * @param {*} i 
- */
-function bugGetAnswer(i) {
-    let qId = $($(".qBtn")[i]).parents(".e-q-body").data().questionid;
-    if (!qId) {
-        qId = $($(".qBtn")[i]).parents(".e-q-body").data().question;
-    }
-
-    requestAPI('POST', `https://zjy2.icve.com.cn/api/faceTeach/test/previewQuestion`, {
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
-        },
-        data: `questionId=${qId}`,
-        onSuccess: (xhr) => {
-            const json = JSON.parse(xhr.responseText)
-            const submitBody = {}
-            const questions = json.question;
-            submitBody._id = qId
-            submitBody.q = questions.allTitle
-            submitBody.a = []
-            submitBody.o = []
-            questions.optionList.forEach(e => {
-                if (e.IsAnswer == "True")
-                    submitBody.a.push(e.Content)
-                submitBody.o.push(e.Content)
-            })
-
-            submitBody.t = questions.questionType
-            if (questions.optionList.length == 0)
-                submitBody.a.push(questions.answer)
-            if (questions.questionType == 7) {
-                json.answerList.forEach((e, i) => {
-                    submitBody.a.push(`${e.OptionContent}-${json.answerContentList[e.OptionSelectContent].OptionAnswerContent}`)
-                })
-            }
-            if (submitBody.a.length === 0 && questions.questionType === 4) {
-                questions.questionAnswer.forEach(e => {
-                    submitBody.a.push(e)
-                })
-            }
-            if (submitBody.a.length === 0) {
-                submitBody._id = submitBody._id + "x"
-                questions.questionAnswer.forEach((e, i) => {
-                    submitBody.a.push(questions.optionList[e].Content)
-                })
-            }
-            submitBody.s = questions.resultAnalysis
-            list.push(submitBody)
-            showAnswerListDiv(submitBody.q,
-                [{
-                    'question': submitBody.q,
-                    'answer': submitBody.a,
-                    'options': submitBody.o,
-                }], i)
-        }
-    })
-}
 
 
 
@@ -1121,14 +1165,15 @@ let nextLock = false
  * @param {*} params
  */
 async function showAnswerListDiv(questionTitle, data, id) {
+    const title = setting.组件等待时间 === setting.考试填题时间 ? `脚本提倡诚信考试，真材实料应考，<b>答案仅供参考</b>，不可全信<br>为保证考试公平，将会在一定范围内返回随机<em>错误答案</em><br>针对考试特殊处理，请耐心等待，出现提示前勿要乱动，否则<em>按舞弊处理</em>其后果自负<br>下一道题将在<b>${setting.考试填题时间 % (1000 * 60) / 1000}</b>秒后继续` : questionTitle
     if ($("#answerBlock").length == 0) {
-        const baseDiv = ` <div id="answerBlock"   style="background: #cccccc8c;max-width:50%; float: right; margin-right: 230px;height:400px;overflow:auto; position: fixed; top: 0; right: 0; z-index: 9999;">
+        const baseDiv = ` <div id="answerBlock"   style="background: #cccccc8c;max-width:50%; float: right; margin-right: 230px;overflow:auto; position: fixed; top: 0; right: 0; z-index: 9999;">
                                     <table border="1" cellspacing="0" align="center" style="font-size: 14px;">
-                                        <caption>${questionTitle}</caption>
+                                        <caption>${title}</caption>
                                         <thead>
                                             <tr>
-                                                <th>标题</th>
-                                                <th>填题目📝</th>
+                                                <th>题目</th>
+                                                <th>📝</th>
                                                 <th>消息</th>
                                             </tr>
                                             <tr>
@@ -1140,13 +1185,18 @@ async function showAnswerListDiv(questionTitle, data, id) {
                                         </thead>
                                         <tbody align="left">
                                         </tbody>
-                                        <tfoot align="center">
-                                        <tr>
-                                            <td><button type="button" id="nextBtn" >查找更多</a></td>
-                                        </tr>
-                                    </tfoot>
+                                       
                                 </table>
                             </div>`
+        /**
+         * 
+         * 
+         *  <tfoot align="center">
+                    <tr>
+                        <td><button type="button" id="nextBtn" >查找更多</a></td>
+                    </tr>
+                </tfoot>
+         */
         $(baseDiv).appendTo("body")
         // 初次初始化后关闭
         reRender = false
@@ -1155,7 +1205,7 @@ async function showAnswerListDiv(questionTitle, data, id) {
     } else {
         if (reRender) {
             //更新对应数据
-            $("#answerBlock caption").text(questionTitle)
+            $("#answerBlock caption").html(title)
             //删除原有的数据
             $('#answerBlock tbody tr').detach()
             // 换题后立即关闭
@@ -1172,16 +1222,16 @@ async function showAnswerListDiv(questionTitle, data, id) {
             tbody += `
                     <tr>
                         <td>${question || ""}</td>
-                        <td><button class="aBtn" aId="${x}" qId=${id} type="button">填入</button></td>
+                        <td><a class="aBtn" aId="${x}" qId=${id} type="button" style="margin:2px">填入</a></td>
                         <td>
                             <p>${msg || ""}</p>
                         </td>
                     </tr>
-                    <tr>
+                    <tr style="height:50px">
                         <td colspan="3">${options || ""}</td>
                     </tr>
-                    <tr>
-                        <td colspan="3"><span  id=${x}>${answer || ""}</span></td>
+                    <tr style="height:50px">
+                        <td colspan="3"><b id=${x} ><a class="aBtn" aId="${x}" qId=${id}> ${answer || ""}</a></b></td>
                     </tr>
                     `
         }
