@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         云课堂|职教云|Icve --网课兼考试助手 (绿版v3)
-// @version      3.4.14
-// @description  职教云学习效率提升助手小脚本,中文化自定义各项参数,自动课件,课件一目十行,保险模式,解除Ctrl+C限制,下载课件,自动四项评论,支持极高正确率的自动答题(作业，测验，考试),搜题填题,软件定制
+// @version      3.6.2
+// @description  职教云学习效率提升助手小脚本，中文化高度可定制参数，自动课件，课件一目十行，保险模式，解除Ctrl+C限制，下载课件，自动四项评论，课堂智能跟帖讨论，支持自动答题(作业，测验，考试)，搜题填题，软件定制
 // @author        tuChanged
 // @run-at       document-start
 // @grant        unsafeWindow
@@ -13,9 +13,12 @@
 // @license      MIT
 // @namespace https://greasyfork.org/users/449085
 // @connect 39.96.64.75
-// @connect wk.92e.win
 // @connect qs.nnarea.cn
+// @connect www.mt3e.cn
+// @connect chadaan8.com
+// @connect 可添加 API 地址
 // @supportURL https://tuchg.github.io
+// @require https://greasyfork.org/scripts/404781.js
 // @contributionURL https://greasyfork.org/users/449085
 // ==/UserScript==
 /*jshint esversion:6 */
@@ -27,9 +30,9 @@
 const setting = {
     // true 为打开,false 为关闭
     // 题库 IP地址 ,可在553行查看对接接口要求
-    自定义题库服务器: "Ｙｅｓ",// 协议://IP
+    自定义题库服务器: "🔐",// 协议://IP
     // 随机评论,自行扩充格式如     "你好",     (英文符号)
-    随机评论词库: ["........", ".", "...",],
+    随机评论词库: ["💀", ".", "...",],
     // 刺激!风险未知,暂知时长不良 打开需关闭仅评论
     学神模式: false,
     // 稳!保证文档类与网站请求保持同步,因此速度较慢,实测可以不用这么严格,默认打开
@@ -59,7 +62,9 @@ const setting = {
     激活报错选项卡: false,
     显示评论数: 1000,
     //
-    自动答题: false
+    自动答题: false,
+    //针对某些 nt 老师的点点点
+    智能跟帖讨论: true
     /*
     * 📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,
     *    价格从优,源码调试成功再付款💰,
@@ -124,12 +129,13 @@ GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
 });
 GM_registerMenuCommand("📝检查脚本配置", function () {
     alert(`
-    当前版本:绿版 v3.4.14✅
+    当前版本:绿版 v3.6.2✅
     题库:${setting.自定义题库服务器 ? setting.自定义题库服务器 : "❌无"}
     学神模式: ${setting.学神模式 ? "✅打开" : "❌关闭"}
     保险模式: ${setting.保险模式 ? "✅打开" : "❌关闭"}
     仅评论模式: ${setting.激活仅评论 ? "✅打开" : "❌关闭"}
     自动填题:${setting.自动答题 ? "✅打开" : "❌关闭"}
+    智能跟帖讨论:${setting.智能跟帖讨论 ? "✅打开" : "❌关闭"}
     当前组件响应时间:${setting.组件等待时间 % (1000 * 60) / 1000} 秒
     考试填题时间:${setting.考试填题时间 % (1000 * 60) / 1000} 秒
     当前评论库: [ ${setting.随机评论词库} ]
@@ -153,7 +159,7 @@ delayExec(() => {
         //作业区
         case "/study/homework/preview.html":
         case "/study/homework/do.html":
-            // case "/study/faceTeachInfo/testPreview.html":
+        case "/study/faceTeachInfo/testPreview.html":
             homeworkHandler()
             break;
         //考试
@@ -162,6 +168,30 @@ delayExec(() => {
             alert("请勿过快提交,同时也尽量调整脚本考试填题时间设置\n答题过快会被检测然后翻车哦")
             setting.组件等待时间 = setting.考试填题时间
             homeworkHandler()
+            break
+        //课堂
+        case "/study/faceTeachInfo/faceTeachActivityListInfo.html":
+            $(".np-hw-li.progressing .np-hw-score:contains('未参加')").each((i, e) => {
+                const x = $(e).parent().parent().find(".am-inline-block:not(.zuoda)")
+                if (x.length > 0) {
+                    x.attr("target", "_blank")
+                    x[0].click()
+                }
+            })
+            break
+        case "/study/faceTeachInfo/newDiscussStuInfo.html":
+            if (!setting.智能跟帖讨论 || $(`.commentli[data-stuid='${localStorage.getItem("userId")}']`).length > 0) {
+                return
+            }
+            const t = findOneVaildDiscuss()
+            if (t) {
+                delayExec(() => {
+                    $(".faceContent").val(t)
+                    $(".replyOk")[0].click()
+                })
+            } else {
+                alert("暂无人参与")
+            }
             break
     }
 
@@ -210,6 +240,21 @@ delayExec(() => {
     });
 
 }, setting.组件等待时间);
+function findOneVaildDiscuss() {
+    let str = null
+    $(".np-question-detail").each((i, e) => {
+        if (i > 0) {
+            const text = e.innerText
+            if (text.trim().length > 10) {
+                str = text
+                return false
+            }
+        }
+    })
+    return str
+}
+
+
 let lastNum = 10;
 let currentCellData = {};
 let isPassMonit = false;
@@ -313,7 +358,6 @@ async function requestMatcher(url, data, that) {
                 const item = data.list && data.list.find(item => item.userId === userId);
                 // 评论已完成
                 console.log("我的评论: ", item);
-
                 switch (data.type) {
                     case 1: {
                         if (setting.激活评论选项卡 || setting.激活所有选项卡的评论) {
@@ -360,15 +404,23 @@ async function requestMatcher(url, data, that) {
                         }
                         break;
                 }
-
-                let tab = isUnFinishedTabs.indexOf(true);
-                if (!setting.激活笔记选项卡 && data.type !== 1)
-                    tab -= 1
-                if (tab > -1 && tab + 2 !== data.type) {
+                if (isUnFinishedTabs.indexOf(true) != -1) {
+                    if (data.type == 4)
+                        data.type = 2
                     await delayExec(() => {
-                        $($(".am-tabs-nav>li a")[tab]).click()
+                        $($(".am-tabs-nav>li a")[data.type]).click()
                     })
+                    console.log("完成");
                 }
+
+                // let tab = isUnFinishedTabs.indexOf(true);
+                // if (!setting.激活笔记选项卡 && data.type !== 1)
+                //     tab -= 1
+                // if (tab > -1 && tab + 2 !== data.type) {
+                //     await delayExec(() => {
+                //         $($(".am-tabs-nav>li a")[tab]).click()
+                //     })
+                // }
 
 
 
@@ -434,9 +486,8 @@ async function requestMatcher(url, data, that) {
 
         case String(url.match(/.*faceTeachActivityInfo$/)):
             {
-                delayExec(() => {
-                    appendSign(data.list)
-                }, setting.组件等待时间)
+
+
             }
             break
         // 课程章节目录
@@ -515,7 +566,7 @@ function nextCell() {
     // debugger
     const data = JSON.parse(sessionStorage.getItem(classId));
     if (!data) {
-        if (confirm("🆇未从缓存中检测到课程数据,是否进入正常运行流程")) {
+        if (confirm("🆇未从缓存中检测到课程数据,是否进入正常运行流程\n如果您是购买使用，请举报售卖方，本脚本完全免费开源使用")) {
             goPage("p")
             return
         }
@@ -797,6 +848,7 @@ function requestAPI(method, url, { headers = {}, data, onSuccess } = {}) {
             onload: function (xhr) {
                 switch (xhr.status) {
                     case 200:
+                    case 404:
                         // let obj = $.parseJSON(xhr.responseText) || {};
                         if (onSuccess)
                             onSuccess(xhr)
@@ -804,7 +856,7 @@ function requestAPI(method, url, { headers = {}, data, onSuccess } = {}) {
                             resolve(xhr)
                         break;
                     default:
-                        reject(xhr)
+                        resolve(xhr)
                         break;
                 }
             },
@@ -872,14 +924,13 @@ async function submitNote() {
         await delayExec(async () => {
             $("#btnNote").click();
             resolve()
-        });
+        }, 60000);
     })
 }
 /**
  * 报错
  */
 async function submitReport() {
-
     return new Promise(async (resolve, reject) => {
         //随机从词库填写评论
         $(".cellErrorContent").text(setting.随机评论词库[rnd(0, setting.随机评论词库.length - 1)])
@@ -899,7 +950,7 @@ function uncageCopyLimit() {
     let arr = ["oncontextmenu", "ondragstart", "onselectstart", "onselect", "oncopy", "onbeforecopy"]
     for (let i of arr)
         $(".hasNoLeft").attr(i, "return true")
-    console.log("已成功解除复制限制,📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,价格从优,源码调试成功再付款💰,实力保证,包远程,包讲解 QQ:2622321887")
+    console.log("已成功解除复制限制,📣如果您有软件定制(管理系统,APP,小程序等任何形式私活)等欢迎联系\n价格从优,源码调试成功再付款💰\n实力保证,包远程,包讲解 QQ:2622321887")
 }
 
 
@@ -907,10 +958,10 @@ function uncageCopyLimit() {
 * 作业处理
 */
 async function homeworkHandler() {
-    await requestAPI("GET", "http://39.96.64.75/").catch(() => {
-        alert("服务器被D到自闭🤯 ,无法继续查题，请在两小时后重试")
-        throw Error
-    })
+    // await requestAPI("GET", "http://39.96.64.75/").catch(() => {
+    //     alert("服务器被D到自闭🤯 ,无法继续查题，请在两小时后重试")
+    //     throw Error
+    // })
     uncageCopyLimit()
     if (!setting.自定义题库服务器) {
         alert("未填写题库📝,无法正常使用答题,仅提供解除网站限制")
@@ -941,134 +992,6 @@ async function autoFill() {
         isAutoFilling = false
     }, setting.组件等待时间)
 }
-/**
- * 搜索答案
- * @param {*} i
- */
-async function searchAnswer(i) {
-    // 往前查找同辈元素
-    const question = $($(".qBtn")[i]).prevAll(".e-q-q").text().trim();
-
-    let body = await apiAnswer(question)
-
-    showAnswerListDiv(question, body, i)
-
-    // requestAPI('GET', `${server}/q?q=${question}`, {
-    //     onSuccess: (xhr) => {
-    //         const body = JSON.parse(xhr.responseText)
-    //         showAnswerListDiv(question, body, i)
-    //     }
-    // })
-}
-async function apiAnswer(q) {
-    const _list = []
-    let a1 = requestAPI('GET', `https://wk.92e.win/api/morepng.php?q=${encodeURIComponent(q)}&token=${token(q)}`)
-    let a2 = requestAPI('GET', `http://qs.nnarea.cn/chaoxing_war/topicServlet?action=query&q=${encodeURIComponent(q)}`)
-    let a3 = requestAPI('GET', `https://wk.92e.win/fortest.php?q=${encodeURIComponent(q)}`)
-    let a4 = requestAPI('GET', `https://wk.92e.win/api/tmlib.php?q=${encodeURIComponent(q)}`)
-    let results = await Promise.all([a4, a1, a2, a3])
-    results.forEach(e => {
-        if (e.responseText) {
-            const submitBody = {
-                _id: '',
-                q: '',
-                a: [],
-                o: [],
-                t: -1,
-                s: ""
-            }
-            try {
-                const url = e.finalUrl;
-                if (url.match(/.*qs\.nnarea\.cn/)) {
-                    const json = JSON.parse(e.responseText)
-                    if (json.code == '1') {
-                        submitBody._id = token(new Date().getTime()) + "" + rnd(100, 100000)
-                        submitBody.q = json.question
-                        submitBody.a.push(json.data)
-                        _list.push(submitBody)
-                    }
-                } else {
-                    const json = JSON.parse(e.responseText)
-                    if ((json.code === undefined && json.code !== 0) || json.code === undefined) {
-                        submitBody._id = token(new Date().getTime()) + "" + rnd(100, 100000)
-                        submitBody.q = json.tm
-                        submitBody.a.push(json.answer)
-                        _list.push(submitBody)
-                    }
-                }
-            } catch (e) {
-                console.log(e);
-            }
-            if (_list.length != 0)
-                requestAPI("PUT", "http://39.96.64.75/s", {
-                    headers: { "Content-Type": "application/json;charset=utf-8" },
-                    data: JSON.stringify(_list)
-                })
-        }
-        //todo 需提交
-        // else if (url.match(/.*api\/tmlib/)) {
-        // } else if (url.match(/.*api\/morepng/)) {
-        // } else if (url.match(/.*\/fortest/)) {
-        // }
-    })
-
-    return _list.map(e => {
-        return {
-            'question': e.q,
-            'answer': e.a,
-            'options': e.o,
-        }
-    })
-}
-function encode(s) {
-    var i, r = [], c, x;
-    for (i = 0; i < s.length; i++)
-        if ((c = s.charCodeAt(i)) < 0x80) r.push(c);
-        else if (c < 0x800) r.push(0xC0 + (c >> 6 & 0x1F), 0x80 + (c & 0x3F));
-        else {
-            if ((x = c ^ 0xD800) >> 10 == 0)
-                c = (x << 10) + (s.charCodeAt(++i) ^ 0xDC00) + 0x10000,
-                    r.push(0xF0 + (c >> 18 & 0x7), 0x80 + (c >> 12 & 0x3F));
-            else r.push(0xE0 + (c >> 12 & 0xF));
-            r.push(0x80 + (c >> 6 & 0x3F), 0x80 + (c & 0x3F));
-        };
-    return r;
-}
-
-function token(s) {
-    var data = new Uint8Array(encode(s))
-    var i, j, t;
-    var l = ((data.length + 8) >>> 6 << 4) + 16, s = new Uint8Array(l << 2);
-    s.set(new Uint8Array(data.buffer)), s = new Uint32Array(s.buffer);
-    for (t = new DataView(s.buffer), i = 0; i < l; i++)s[i] = t.getUint32(i << 2);
-    s[data.length >> 2] |= 0x80 << (24 - (data.length & 3) * 8);
-    s[l - 1] = data.length << 3;
-    var w = [], f = [
-        function () { return m[1] & m[2] | ~m[1] & m[3]; },
-        function () { return m[1] ^ m[2] ^ m[3]; },
-        function () { return m[1] & m[2] | m[1] & m[3] | m[2] & m[3]; },
-        function () { return m[1] ^ m[2] ^ m[3]; }
-    ], rol = function (n, c) { return n << c | n >>> (32 - c); },
-        k = [1518500249, 1859775393, -1894007588, -899497514],
-        m = [1732584193, -271733879, null, null, -1009589776];
-    m[2] = ~m[0], m[3] = ~m[1];
-    for (i = 0; i < s.length; i += 16) {
-        var o = m.slice(0);
-        for (j = 0; j < 80; j++)
-            w[j] = j < 16 ? s[i + j] : rol(w[j - 3] ^ w[j - 8] ^ w[j - 14] ^ w[j - 16], 1),
-                t = rol(m[0], 5) + f[j / 20 | 0]() + m[4] + w[j] + k[j / 20 | 0] | 0,
-                m[1] = rol(m[1], 30), m.pop(), m.unshift(t);
-        for (j = 0; j < 5; j++)m[j] = m[j] + o[j] | 0;
-    };
-    t = new DataView(new Uint32Array(m).buffer);
-    for (var i = 0; i < 5; i++)m[i] = t.getUint32(i << 2);
-
-    var hex = Array.prototype.map.call(new Uint8Array(new Uint32Array(m).buffer), function (e) {
-        return (e < 16 ? "0" : "") + e.toString(16);
-    }).join("");
-    return hex;
-}
-
 
 
 // 重新渲染答题区的标志位
@@ -1111,7 +1034,6 @@ const server = setting.自定义题库服务器 || "http://127.0.0.1:5000"
  */
 
 
-
 /**
  * 填题
  * @param {*} id  答案 ID
@@ -1135,7 +1057,7 @@ function fillAnswer(aID, qId) {
             break;
         // < !--3：判断题-- >
         case 3:
-            inputBlock = $(qBody.find(".e-a-g li")[answer == "1" ? 0 : 1]);
+            inputBlock = $(qBody.find(".e-a-g li")[(answer == "1" || answer == "正确" || answer == "对") ? 0 : 1]);
             //默认第一项为正确
             inputBlock.click()
             inputBlock.focus()
@@ -1165,11 +1087,11 @@ let nextLock = false
  * @param {*} params
  */
 async function showAnswerListDiv(questionTitle, data, id) {
-    const title = setting.组件等待时间 === setting.考试填题时间 ? `脚本提倡诚信考试，真材实料应考，<b>答案仅供参考</b>，不可全信<br>为保证考试公平，将会在一定范围内返回随机<em>错误答案</em><br>针对考试特殊处理，请耐心等待，出现提示前勿要乱动，否则<em>按舞弊处理</em>其后果自负<br>下一道题将在<b>${setting.考试填题时间 % (1000 * 60) / 1000}</b>秒后继续` : questionTitle
+    const title = setting.组件等待时间 === setting.考试填题时间 ? `脚本提倡诚信考试，真材实料应考，<b>答案仅供参考</b>，不可全信<br>为保证考试公平，将会在一定范围内返回随机<em>错误答案</em><br>针对考试特殊处理，请耐心等待，出现提示前勿要乱动，否则<em>按舞弊处理</em>其后果自负<br>下一道题将在<b>${setting.考试填题时间 % (1000 * 60) / 1000}</b>秒后继续` : questionTitle.substr(0, 30)
     if ($("#answerBlock").length == 0) {
         const baseDiv = ` <div id="answerBlock"   style="background: #cccccc8c;max-width:50%; float: right; margin-right: 230px;overflow:auto; position: fixed; top: 0; right: 0; z-index: 9999;">
                                     <table border="1" cellspacing="0" align="center" style="font-size: 14px;">
-                                        <caption>${title}</caption>
+                                        <caption style="min-width:200px;">${title}</caption>
                                         <thead>
                                             <tr>
                                                 <th>题目</th>
@@ -1185,18 +1107,10 @@ async function showAnswerListDiv(questionTitle, data, id) {
                                         </thead>
                                         <tbody align="left">
                                         </tbody>
-                                       
                                 </table>
+                                <center><a type="button" id="nextBtn" >查找更多 (慢)</a></center>
+
                             </div>`
-        /**
-         * 
-         * 
-         *  <tfoot align="center">
-                    <tr>
-                        <td><button type="button" id="nextBtn" >查找更多</a></td>
-                    </tr>
-                </tfoot>
-         */
         $(baseDiv).appendTo("body")
         // 初次初始化后关闭
         reRender = false
@@ -1241,17 +1155,17 @@ async function showAnswerListDiv(questionTitle, data, id) {
       */
     if (!nextLock) {
         $("#nextBtn").off("click")
-        $("#nextBtn").on("click", (event) => {
-            if (!nextLock)
-                requestAPI('GET', `${server}/q2?q=${questionTitle}`, {
-                    onSuccess: (xhr) => {
-                        const body = JSON.parse(xhr.responseText)
-                        console.log(body);
-                        showAnswerListDiv(questionTitle, body, id)
-                        //不再允许重复访问
-                        nextLock = true
-                    }
-                })
+        $("#nextBtn").on("click", async () => {
+            if (!nextLock) {
+                /**
+                 * 慢速接口
+                 * @param questionTitle 问题 
+                 * @param id 对应 div id (用于定位答题)
+                 */
+                slowSearch(questionTitle, id)
+                //不再允许重复访问
+                nextLock = true
+            }
         })
     }
     /**
@@ -1264,8 +1178,32 @@ async function showAnswerListDiv(questionTitle, data, id) {
     $(".aBtn").on("click", (event) => {
         fillAnswer(event.srcElement.attributes["aId"].value, event.srcElement.attributes["qId"].value)
     })
-    if (setting.自动答题)
-        /**填写第一项到答案 */
+    // if (setting.自动答题)
+    /**填写第一项到答案 */
+    try {
         $(".aBtn")[0].click()
+    } catch (e) {
 
+    }
+}
+/**
+ * 搜索答案
+ * @param {*} i
+ */
+async function searchAnswer(i) {
+    // 往前查找同辈元素
+    const question = $($(".qBtn")[i]).prevAll(".e-q-q").text().trim();
+
+    showAnswerListDiv("搜索中...", [], i)
+    /**
+      * 快速接口 
+      * @param questionTitle 问题 
+      * @param id 对应 div id(用于定位答题)
+      */
+    try {
+        await quickSearch(question, i)
+    } catch (e) {
+        reRender = true
+        showAnswerListDiv("搜索失败...", [{ options: "<center><b>作者删库跑路了</b></center>" }], i)
+    }
 }
