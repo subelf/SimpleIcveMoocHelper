@@ -52,6 +52,8 @@
 
 - 支持单选，多选，判断，填空，问答，匹配,支持测验，作业，考试(ver 3.4 added)
 
+- 添加智能讨论(ver 3.6 added)
+
 - ........
 
 ```js
@@ -97,7 +99,7 @@
 | 测试浏览器 | Chrome                                                                                     | Chrome                                                                                          | Chromium 80(低版本不兼容)                                                                  |
 | 已知问题   | 能否运行，看脸                                                                             | 能否运行，是                                                                                    | 能否运行，是                                                                               |
 | 源文件     | [bule.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/blue.src.js) | [green.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/green.v3.src.js) | [cyan.src.js](https://github.com/W-ChihC/SimpleIcveMoocHelper/blob/master/src/cyan.src.js) |
-| 版本       | 1.08                                                                                       | 3.4                                                                                             | 0.2(IndexDB)                                                                               |
+| 版本       | 1.08                                                                                       | 3.6                                                                                             | 0.2(IndexDB)                                                                               |
 
 ~~大一菜鸡 学习 JS 练手所写, ES5,6 瞎混搭,勿喷~~
 
