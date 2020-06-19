@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         云课堂|职教云|Icve --网课兼考试助手 (绿版v3)
-// @version      3.6.3
+// @version      3.6.4
 // @description  职教云学习效率提升助手小脚本，中文化高度可定制参数，自动课件，课件一目十行，保险模式，解除Ctrl+C限制，下载课件，自动四项评论，课堂智能跟帖讨论，支持自动答题(作业，测验，考试)，搜题填题，软件定制
 // @author        tuChanged
 // @run-at       document-start
@@ -129,7 +129,7 @@ GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
 });
 GM_registerMenuCommand("📝检查脚本配置", function () {
     alert(`
-    当前版本:绿版 v3.6.3✅
+    当前版本:绿版 v3.6.4✅
     题库:${setting.自定义题库服务器 ? setting.自定义题库服务器 : "❌无"}
     学神模式: ${setting.学神模式 ? "✅打开" : "❌关闭"}
     保险模式: ${setting.保险模式 ? "✅打开" : "❌关闭"}
@@ -1041,7 +1041,7 @@ const server = setting.自定义题库服务器 || "http://127.0.0.1:5000"
 function fillAnswer(aID, qId) {
     // 多选 及自动答题模块
     //todo 后端: 1,2,3
-    const answer = $(`#${aID}`).text();
+    let answer = $(`#${aID}`).text();
     const qBody = $($(".qBtn")[qId]).parents(".e-q-body");
     const questionType = qBody.data("questiontype");
     let inputBlock;
@@ -1057,7 +1057,8 @@ function fillAnswer(aID, qId) {
             break;
         // < !--3：判断题-- >
         case 3:
-            inputBlock = $(qBody.find(".e-a-g li")[(answer == "1" || answer == "正确" || answer == "对" || answer == "✓") ? 0 : 1]);
+            answer = answer.trim()
+            inputBlock = $(qBody.find(".e-a-g li")[(answer == "1" || answer == "正确" || answer == "对" || answer == "√") ? 0 : 1]);
             //默认第一项为正确
             inputBlock.click()
             inputBlock.focus()
