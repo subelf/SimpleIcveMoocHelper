@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         云课堂智慧职教 职教云  Icve 网课助手(绿版v3)
-// @version      3.3.9
-// @description  职教云学习效率提升助手小脚本,中文化自定义各项参数,自动课件,课件一目十行,保险模式,解除Ctrl+C限制,下载课件,自动三项评论,搜题填题,软件定制
+// @name         云课堂|职教云|Icve --网课兼考试助手 (绿版v3)
+// @version      3.6.4
+// @description  职教云学习效率提升助手小脚本，中文化高度可定制参数，自动课件，课件一目十行，保险模式，解除Ctrl+C限制，下载课件，自动四项评论，课堂智能跟帖讨论，支持自动答题(作业，测验，考试)，搜题填题，软件定制
 // @author        tuChanged
 // @run-at       document-start
 // @grant        unsafeWindow
@@ -12,50 +12,64 @@
 // @exclude     *://*zjy2.icve.com.cn/study/homework/docHomeworkPreview.html*
 // @license      MIT
 // @namespace https://greasyfork.org/users/449085
-// @supportURL https://github.com/W-ChihC/SimpleIcveMoocHelper
+// @connect 39.96.64.75
+// @connect qs.nnarea.cn
+// @connect www.mt3e.cn
+// @connect chadaan8.com
+// @connect 可添加 API 地址
+// @supportURL https://tuchg.github.io
+// @require https://greasyfork.org/scripts/404781.js
 // @contributionURL https://greasyfork.org/users/449085
 // ==/UserScript==
 /*jshint esversion:6 */
 'use strict'
 const setting = {
+    /**
+     * 根据下方根据提示修改脚本配置
+     */
+    /*
+      * 📣如果您有软件定制(APP,小程序,管理系统等),毕设困扰,又或者课程设计困扰等欢迎联系,
+      *    价格从优,源码调试成功，线上稳定运行再付款💰,
+　　　*    支持第三方托管交易
+      * 实力保证,包远程,包讲解 QQ:2622321887
+    */
+
     // true 为打开,false 为关闭
-    // 题库 IP地址 ,可在553行查看对接接口要求
-    自定义题库服务器: "",// 协议://IP
-    // 随机评论,自行扩充格式如     "你好",     (英文符号)
-    随机评论词库: ["........", ".", "...",],
-    // 刺激!风险未知,暂知时长不良 打开需关闭仅评论
-    学神模式: false,
-    // 稳!保证文档类与网站请求保持同步,因此速度较慢,实测可以不用这么严格,默认打开
-    保险模式: false,//如果课件始终不跳下一个,请勿打开该项
-    //是否打开课件下载
-    打开课件下载: true,
-    // 部分课件存在无检测机制问题,会尝试自动关闭保险模式
-    自动关闭保险模式: true,
-    /*影响刷课速度关键选项,延时非最优解,过慢请自行谨慎调整*/
-    最高延迟响应时间: 4000,//毫秒
-    最低延迟响应时间: 3000,//毫秒
-    组件等待时间: 1500,//毫秒 组件包括视频播放器,JQuery等,视网络,设备性能而定,启动失败则调整
-    //0-高清 1-清晰 2-流畅 3-原画
-    //感谢tonylu00提供最新实测参数 --0-原画 1-高清 2-清晰 3-流畅
-    视频清晰度: 3,
-    //2倍速,允许开倍速则有效,请放心使用,失败是正常现象
-    视频播放倍速: 2,
-    //是否保持静音
-    是否保持静音: true,
+    //正确率不高，题目格式不适配，不推荐打开
+    自动答题: false,
+    //针对某些 nt 老师的点点点，快速完成课堂讨论
+    智能跟帖讨论: true,
     激活仅评论: false,//与学神模式冲突,需二选一
+    // 随机评论,自行扩充格式如     "你好",     (英文符号)
+    随机评论词库: ["..", "🇨🇳", "💬"],
     //开启所有选项卡的评论,最高优先等级,打开该项会覆盖下面的细分设置,
     激活所有选项卡的评论: false,
     激活评论选项卡: false,
     激活问答选项卡: false,
     激活笔记选项卡: false,
     激活报错选项卡: false,
-    显示评论数: 1000
-
-    /*
-    * 📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,
-    *    价格从优,源码调试成功再付款💰,
-    *     实力保证,包远程,包讲解 QQ:2622321887
-    */
+    显示评论数: 1000,
+    // 刺激!风险未知,暂知时长不良 打开需关闭仅评论
+    学神模式: false,
+    保险模式: false,//如果课件始终不跳下一个,请勿打开该项
+    //解除课件下载
+    打开课件下载: true,
+    // 部分课件存在无检测机制问题,会尝试自动关闭保险模式
+    自动关闭保险模式: true,
+    /*影响速度关键选项,延时非最优解,过慢请自行谨慎调整*/
+    最高延迟响应时间: 4000,//毫秒
+    最低延迟响应时间: 3000,//毫秒
+    组件等待时间: 1500,//毫秒 组件包括视频播放器,JQuery,答题等,视网络,设备性能而定,启动失败则调整
+    考试填题时间: 30000,//30秒 1 秒=1000 毫秒
+    //0-高清 1-清晰 2-流畅 3-原画
+    //感谢tonylu00提供最新实测参数 --0-原画 1-高清 2-清晰 3-流畅
+    视频清晰度: 3,
+    //2倍速,允许开倍速则有效,请放心使用，失败是正常现象
+    视频播放倍速: 2,
+    //是否保持静音
+    是否保持静音: true,
+    //当前版本可不用理会该项, 题库 IP地址 ,可在553行查看对接接口要求
+    自定义题库服务器: "🔐"// 协议://IP
 }, top = unsafeWindow,
     url = location.pathname
 //产生区间随机数
@@ -115,18 +129,22 @@ GM_registerMenuCommand("🌹为脚本维护工作助力", function () {
 });
 GM_registerMenuCommand("📝检查脚本配置", function () {
     alert(`
-    当前版本:绿版 v3.3.9✅
+    当前版本:绿版 v3.6.4✅
     题库:${setting.自定义题库服务器 ? setting.自定义题库服务器 : "❌无"}
     学神模式: ${setting.学神模式 ? "✅打开" : "❌关闭"}
     保险模式: ${setting.保险模式 ? "✅打开" : "❌关闭"}
     仅评论模式: ${setting.激活仅评论 ? "✅打开" : "❌关闭"}
-    当前组件响应时间(秒):${setting.组件等待时间 % (1000 * 60) / 1000}
+    自动填题:${setting.自动答题 ? "✅打开" : "❌关闭"}
+    智能跟帖讨论:${setting.智能跟帖讨论 ? "✅打开" : "❌关闭"}
+    当前组件响应时间:${setting.组件等待时间 % (1000 * 60) / 1000} 秒
+    考试填题时间:${setting.考试填题时间 % (1000 * 60) / 1000} 秒
     当前评论库: [ ${setting.随机评论词库} ]
     已激活的评论选项卡:${((setting.激活所有选项卡的评论 || setting.激活评论选项卡) ? "评论;" : "") + ((setting.激活所有选项卡的评论 || setting.激活问答选项卡) ? "问答;" : "") + ((setting.激活所有选项卡的评论 || setting.激活笔记选项卡) ? "笔记;" : "") + ((setting.激活所有选项卡的评论 || setting.激活报错选项卡) ? "报错" : "")}\n
+
     📝修改配置请找到油猴插件的管理面板
 
-    插件仅供提升学习效率减少,繁杂工作,解放双手之用,未利用任何漏洞达成目的,均为网页自动化技术
-    
+    插件仅供提升学习效率减少,繁杂工作,解放双手之用,未利用任何漏洞达成目的,均为网页自动化测试技术,切勿滥用
+
     脚本完全免费开源,遵循 MIT 协议,严禁倒卖,如果您是购买使用请举报售卖者
     `)
 });
@@ -141,10 +159,40 @@ delayExec(() => {
         //作业区
         case "/study/homework/preview.html":
         case "/study/homework/do.html":
-        case "/study/onlineExam/preview.html":
-        case "/study/onlineExam/do.html":
+        case "/study/faceTeachInfo/testPreview.html":
             homeworkHandler()
             break;
+        //考试
+        case "/study/onlineExam/preview.html":
+        case "/study/onlineExam/do.html":
+            alert("请勿过快提交,同时也尽量调整脚本考试填题时间设置\n答题过快会被检测然后翻车哦")
+            setting.组件等待时间 = setting.考试填题时间
+            homeworkHandler()
+            break
+        //课堂
+        case "/study/faceTeachInfo/faceTeachActivityListInfo.html":
+            $(".np-hw-li.progressing .np-hw-score:contains('未参加')").each((i, e) => {
+                const x = $(e).parent().parent().find(".am-inline-block:not(.zuoda)")
+                if (x.length > 0) {
+                    x.attr("target", "_blank")
+                    x[0].click()
+                }
+            })
+            break
+        case "/study/faceTeachInfo/newDiscussStuInfo.html":
+            if (!setting.智能跟帖讨论 || $(`.commentli[data-stuid='${localStorage.getItem("userId")}']`).length > 0) {
+                return
+            }
+            const t = findOneVaildDiscuss()
+            if (t) {
+                delayExec(() => {
+                    $(".faceContent").val(t)
+                    $(".replyOk")[0].click()
+                })
+            } else {
+                alert("暂无人参与")
+            }
+            break
     }
 
     $(document).ajaxSend((e, xhr, options) => {
@@ -192,6 +240,21 @@ delayExec(() => {
     });
 
 }, setting.组件等待时间);
+function findOneVaildDiscuss() {
+    let str = null
+    $(".np-question-detail").each((i, e) => {
+        if (i > 0) {
+            const text = e.innerText
+            if (text.trim().length > 10) {
+                str = text
+                return false
+            }
+        }
+    })
+    return str
+}
+
+
 let lastNum = 10;
 let currentCellData = {};
 let isPassMonit = false;
@@ -208,6 +271,7 @@ let isPassMonit = false;
         if (data && data.indexOf("studyNewlyTime") >= 0) {
             // 关闭错误弹窗
             $(".sgBtn.ok").click();
+            autoCloseDialog()
 
             try {
                 isPassMonit = true
@@ -294,7 +358,6 @@ async function requestMatcher(url, data, that) {
                 const item = data.list && data.list.find(item => item.userId === userId);
                 // 评论已完成
                 console.log("我的评论: ", item);
-
                 switch (data.type) {
                     case 1: {
                         if (setting.激活评论选项卡 || setting.激活所有选项卡的评论) {
@@ -341,15 +404,23 @@ async function requestMatcher(url, data, that) {
                         }
                         break;
                 }
-
-                let tab = isUnFinishedTabs.indexOf(true);
-                if (!setting.激活笔记选项卡 && data.type !== 1)
-                    tab -= 1
-                if (tab > -1 && tab + 2 !== data.type) {
+                if (isUnFinishedTabs.indexOf(true) != -1) {
+                    if (data.type == 4)
+                        data.type = 2
                     await delayExec(() => {
-                        $($(".am-tabs-nav>li a")[tab]).click()
+                        $($(".am-tabs-nav>li a")[data.type]).click()
                     })
+                    console.log("完成");
                 }
+
+                // let tab = isUnFinishedTabs.indexOf(true);
+                // if (!setting.激活笔记选项卡 && data.type !== 1)
+                //     tab -= 1
+                // if (tab > -1 && tab + 2 !== data.type) {
+                //     await delayExec(() => {
+                //         $($(".am-tabs-nav>li a")[tab]).click()
+                //     })
+                // }
 
 
 
@@ -375,7 +446,7 @@ async function requestMatcher(url, data, that) {
                 }
 
                 if (currentCellData && setting.打开课件下载) {
-                    // 破解课件下载 todo
+                    // 课件下载 todo
                     data.isAllowDownLoad = true
                     data.isDownLoad = true
                     console.log("当前课件下载地址:", data.downLoadUrl);
@@ -415,9 +486,8 @@ async function requestMatcher(url, data, that) {
 
         case String(url.match(/.*faceTeachActivityInfo$/)):
             {
-                delayExec(() => {
-                    appendSign(data.list)
-                }, setting.组件等待时间)
+
+
             }
             break
         // 课程章节目录
@@ -496,7 +566,7 @@ function nextCell() {
     // debugger
     const data = JSON.parse(sessionStorage.getItem(classId));
     if (!data) {
-        if (confirm("🆇未从缓存中检测到课程数据,是否进入正常运行流程")) {
+        if (confirm("🆇未从缓存中检测到课程数据,是否进入正常运行流程\n如果您是购买使用，请举报售卖方，本脚本完全免费开源使用")) {
             goPage("p")
             return
         }
@@ -516,34 +586,6 @@ function nextCell() {
     })
 }
 
-/**
- * 补签
- * @给我一碗炒饭 同学的抓包分析结果
- */
-function appendSign(list) {
-    const noSignBtns = $("p:contains('未参与')").closest(".np-hw-status");
-
-    let i = 0
-    list && list.forEach((item, index) => {
-        if (item.selectType < 3 && item.activityType === 1)
-            $(noSignBtns[i++]).append(`<p class="np-hw-score sBtn" id="${item.Id}">补签</p>`)
-    })
-    $(".sBtn").on("click", async (event) => {
-        const signId = event.srcElement.attributes["id"].value
-        let result = await requestAPI('POST', 'https://zjyapp.icve.com.cn/newMobileAPI/FaceTeach/changeSignType', {
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded;charset=utf-8"
-            },
-            data: 'data={"SignResultType" : 1,"StuId" :\"' + stuId + '\","OpenClassId" :\"' + classId + '\","SignId" :\"' + signId + '\","Id" : \"' + stuId + '\","SourceType" : 3}&sourceType=3'
-        })
-        if (JSON.parse(result.responseText).code === 1) {
-            if (alert("补签成功"))
-                location.reload()
-        } else {
-            alert("很遗憾,补签失败")
-        }
-    })
-}
 
 /**
  * 跳转到某页面
@@ -785,7 +827,54 @@ function nextDOCPPT() {
     docNext && docNext.click()
     sNext && sNext.click()
 }
+/**
+* 对XHR的二次全局封装,方便后期扩展
+* @param {*} method
+* @param {*} url
+* @param {*} headers
+* @param {*} data
+* @param {*} onSuccess
+*/
+function requestAPI(method, url, { headers = {}, data, onSuccess } = {}) {
+    return new Promise((resolve, reject) => {
+        GM_xmlhttpRequest({
+            method: method,
+            url: url,
+            headers: headers,
+            data: data,
+            //关闭 cookie
+            anonymous: true,
+            timeout: 2000,
+            onload: function (xhr) {
+                switch (xhr.status) {
+                    case 200:
+                    case 404:
+                        // let obj = $.parseJSON(xhr.responseText) || {};
+                        if (onSuccess)
+                            onSuccess(xhr)
+                        else
+                            resolve(xhr)
+                        break;
+                    default:
+                        resolve(xhr)
+                        break;
+                }
+            },
+            onabort: function (params) {
+                reject(params)
 
+            },
+            onerror: function (params) {
+                // debugger
+                reject(params)
+            },
+            ontimeout: function (params) {
+                reject(params)
+            }
+        });
+    })
+
+}
 
 
 /**
@@ -806,6 +895,7 @@ async function submitComment() {
         });
     })
 }
+
 /**
  * 问答
  */
@@ -821,6 +911,7 @@ async function submitQuestion() {
         }, 60000);
     })
 }
+const list = []
 /**
  * 笔记
  */
@@ -833,14 +924,13 @@ async function submitNote() {
         await delayExec(async () => {
             $("#btnNote").click();
             resolve()
-        });
+        }, 60000);
     })
 }
 /**
  * 报错
  */
 async function submitReport() {
-
     return new Promise(async (resolve, reject) => {
         //随机从词库填写评论
         $(".cellErrorContent").text(setting.随机评论词库[rnd(0, setting.随机评论词库.length - 1)])
@@ -860,21 +950,49 @@ function uncageCopyLimit() {
     let arr = ["oncontextmenu", "ondragstart", "onselectstart", "onselect", "oncopy", "onbeforecopy"]
     for (let i of arr)
         $(".hasNoLeft").attr(i, "return true")
-    console.log("已成功复制解除限制,📣如果您有软件定制(管理系统,APP,小程序等),毕设困扰,又或者课程设计困扰等欢迎联系,价格从优,源码调试成功再付款💰,实力保证,包远程,包讲解 QQ:2622321887")
+    console.log("已成功解除复制限制,📣如果您有软件定制(管理系统,APP,小程序等任何形式私活)等欢迎联系\n价格从优,源码调试成功再付款💰\n实力保证,包远程,包讲解 QQ:2622321887")
 }
-
 
 
 /**
 * 作业处理
 */
-function homeworkHandler() {
+async function homeworkHandler() {
+    await requestAPI("GET", "http://39.96.64.75/").catch(() => {
+        alert("服务器被D到自闭🤯 ,无法继续查题，请在两小时后重试")
+        throw Error
+    })
     uncageCopyLimit()
     if (!setting.自定义题库服务器) {
-        alert("未填写题库📝,无法正常使用答题,仅提供破解网站限制")
+        alert("未填写题库📝,无法正常使用答题,仅提供解除网站限制")
     }
     bindBtnToQuestion()
+    if (setting.自动答题)
+        autoFill()
 }
+
+let isAutoFilling = false
+/**
+ * 单选 多选 判断 填空 问答
+ */
+async function autoFill() {
+    const q = $(".qBtn");
+    for (let i = 0; i < q.length; i++) {
+        const e = q[i];
+        await delayExec(() => {
+            isAutoFilling = true
+            e.click()
+        }, setting.组件等待时间)
+    }
+    delayExec(() => {
+        if (setting.组件等待时间 === setting.考试填题时间) {
+            alert("如果你不想被老师打零分，就别智障的过快提交")
+        }
+        $("#submitHomeWork").click()
+        isAutoFilling = false
+    }, setting.组件等待时间)
+}
+
 
 // 重新渲染答题区的标志位
 let reRender = false
@@ -905,7 +1023,7 @@ const server = setting.自定义题库服务器 || "http://127.0.0.1:5000"
  *  [
  *   {
  *    'question': '问题,可留空',
- *    'answer': '答案', //判断题 √为正确,其余为错误
+ *    'answer': '答案', //判断题 1 为正确,其余为错误
  *    'options':'题目选项,可留空',
  *    'msg': '消息,可留空'
  * },{
@@ -915,54 +1033,84 @@ const server = setting.自定义题库服务器 || "http://127.0.0.1:5000"
  *
  */
 
+
 /**
- * 搜索答案
- * @param {*} i
+ * 填题
+ * @param {*} id  答案 ID
  */
-function searchAnswer(i) {
-    // 往前查找同辈元素
-    const question = $($(".qBtn")[i]).prevAll(".e-q-q").text().trim();
-
-    requestAPI('GET', `${server}/q?q=${question}`, {
-        onSuccess: (xhr) => {
-            const body = JSON.parse(xhr.responseText)
-            showAnswerListDiv(question, body, i)
-        }
-    })
+function fillAnswer(aID, qId) {
+    // 多选 及自动答题模块
+    //todo 后端: 1,2,3
+    let answer = $(`#${aID}`).text();
+    const qBody = $($(".qBtn")[qId]).parents(".e-q-body");
+    const questionType = qBody.data("questiontype");
+    let inputBlock;
+    switch (questionType) {
+        // <!-- 1：单选 2：多选 -->
+        case 1:
+        case 2:
+            answer.split(",").forEach(e => {
+                inputBlock = $(qBody.find(`.e-a-g li:contains("${e}")`));
+                inputBlock.click()
+                inputBlock.focus()
+            })
+            break;
+        // < !--3：判断题-- >
+        case 3:
+            answer = answer.trim()
+            inputBlock = $(qBody.find(".e-a-g li")[(answer == "1" || answer == "正确" || answer == "对" || answer == "√") ? 0 : 1]);
+            //默认第一项为正确
+            inputBlock.click()
+            inputBlock.focus()
+            break;
+        // <!-- 4：填空题(主观) 5：填空题(客观) 6 问答-->
+        case 4:
+        case 5:
+            answer.split(",").forEach((e, i) => {
+                inputBlock = $(qBody.find(".e-a-g input")[i])
+                inputBlock.val(e)
+                inputBlock.blur()
+            })
+            break;
+        case 6:
+            inputBlock = $(qBody.find("textarea")[0])
+            inputBlock.val(answer)
+            inputBlock.blur()
+            break;
+        default:
+            break;
+    }
 }
-
 // 查看更多答案的锁
 let nextLock = false
 /**
  * 显示搜索框
  * @param {*} params
  */
-function showAnswerListDiv(questionTitle, data, id) {
+async function showAnswerListDiv(questionTitle, data, id) {
+    const title = setting.组件等待时间 === setting.考试填题时间 ? `脚本提倡诚信考试，真材实料应考，<b>答案仅供参考</b>，不可全信<br>为保证考试公平，将会在一定范围内返回随机<em>错误答案</em><br>针对考试特殊处理，请耐心等待，出现提示前勿要乱动，否则<em>按舞弊处理</em>其后果自负<br> ${setting.自动答题 ? `下一道题将在<b>${setting.考试填题时间 % (1000 * 60) / 1000}</b>秒后继续` : ""}` : questionTitle.substr(0, 30)
     if ($("#answerBlock").length == 0) {
-        const baseDiv = ` <div id="answerBlock"   style="background: #cccccc8c;max-width:50%; float: right; margin-right: 230px;height:400px;overflow:auto; position: fixed; top: 0; right: 0; z-index: 9999;">
+        const baseDiv = ` <div id="answerBlock"   style="background: #cccccc8c;max-width:50%; float: right; margin-right: 230px;overflow:auto; position: fixed; top: 0; right: 0; z-index: 9999;">
                                     <table border="1" cellspacing="0" align="center" style="font-size: 14px;">
-                                    <caption>${questionTitle}</caption>
-                                    <thead>
-                                        <tr>
-                                            <th>标题</th>
-                                            <th>填题目📝</th>
-                                            <th>消息</th>
-                                        </tr>
-                                        <tr>
-                                            <th colspan="2">选项</th>
-                                        </tr>
-                                        <tr>
-                                            <th colspan="2">结果</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody align="left">
-                                    </tbody>
-                                    <tfoot align="center">
-                                    <tr>
-                                        <td><button type="button" id="nextBtn" >查找更多</a></td>
-                                    </tr>
-                                </tfoot>
+                                        <caption style="min-width:200px;">${title}</caption>
+                                        <thead>
+                                            <tr>
+                                                <th>题目</th>
+                                                <th>📝</th>
+                                                <th>消息</th>
+                                            </tr>
+                                            <tr>
+                                                <th colspan="2">选项</th>
+                                            </tr>
+                                            <tr>
+                                                <th colspan="2">结果</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody align="left">
+                                        </tbody>
                                 </table>
+                                <center><a type="button" id="nextBtn" >查找更多 (慢)</a></center>
+
                             </div>`
         $(baseDiv).appendTo("body")
         // 初次初始化后关闭
@@ -972,7 +1120,7 @@ function showAnswerListDiv(questionTitle, data, id) {
     } else {
         if (reRender) {
             //更新对应数据
-            $("#answerBlock caption").text(questionTitle)
+            $("#answerBlock caption").html(title)
             //删除原有的数据
             $('#answerBlock tbody tr').detach()
             // 换题后立即关闭
@@ -989,37 +1137,36 @@ function showAnswerListDiv(questionTitle, data, id) {
             tbody += `
                     <tr>
                         <td>${question || ""}</td>
-                        <td><button class="aBtn" aId="${x}" qId=${id} type="button">填入</button></td>
+                        <td><a class="aBtn" aId="${x}" qId=${id} type="button" style="margin:2px">填入</a></td>
                         <td>
-                            <p>${(msg && msg.length > 10) ? "" : msg}</p>
+                            <p>${msg || ""}</p>
                         </td>
                     </tr>
-                    <tr>
+                    <tr style="height:50px">
                         <td colspan="3">${options || ""}</td>
                     </tr>
-                    <tr>
-                        <td colspan="3"><textarea id=${x} cols="20" rows="2">${answer || ""}</textarea></td>
+                    <tr style="height:50px">
+                        <td colspan="3"><b id=${x} ><a class="aBtn" aId="${x}" qId=${id}> ${answer || ""}</a></b></td>
                     </tr>
                     `
         }
     });
-
     /**
       * 查看更多
       */
     if (!nextLock) {
         $("#nextBtn").off("click")
-        $("#nextBtn").on("click", (event) => {
-            if (!nextLock)
-                requestAPI('GET', `${server}/q2?q=${questionTitle}`, {
-                    onSuccess: (xhr) => {
-                        const body = JSON.parse(xhr.responseText)
-                        console.log(body);
-                        showAnswerListDiv(questionTitle, body, id)
-                        //不再允许重复访问
-                        nextLock = true
-                    }
-                })
+        $("#nextBtn").on("click", async () => {
+            if (!nextLock) {
+                /**
+                 * 慢速接口
+                 * @param questionTitle 问题 
+                 * @param id 对应 div id (用于定位答题)
+                 */
+                slowSearch(questionTitle, id)
+                //不再允许重复访问
+                nextLock = true
+            }
         })
     }
     /**
@@ -1032,77 +1179,34 @@ function showAnswerListDiv(questionTitle, data, id) {
     $(".aBtn").on("click", (event) => {
         fillAnswer(event.srcElement.attributes["aId"].value, event.srcElement.attributes["qId"].value)
     })
+    // if (setting.自动答题)
+    /**填写第一项到答案 */
+    try {
 
-}
-/**
- * 填题
- * @param {*} id  答案 ID
- */
-function fillAnswer(aID, qId) {
-    //todo 后端: 1,2,3
-    const answer = $(`#${aID}`).val();
-    const qBody = $($(".qBtn")[qId]).parents(".e-q-body");
-    const questionType = qBody.data("questiontype");
-    switch (questionType) {
-        // <!-- 1：单选 2：多选 -->
-        case 1:
-            $(qBody.find(`.e-a-g li:contains('${answer}')`)).click()
-            break;
-        case 2:
-            break;
-        // < !--3：判断题-- >
-        case 3:
-            //默认第一项为正确
-            $(qBody.find(".e-a-g li")[answer == "√" ? 0 : 1]).click()
-            break;
-        // <!-- 4：填空题(主观) 5：填空题(客观) 6 问答-->
-        case 4:
-        case 5:
-            $(qBody.find(".e-a-g input")[0]).val(answer)
-            break;
-        case 6:
-            $(qBody.find("textarea")[0]).val(answer)
-            break;
-        default:
-            break;
+        $(".aBtn")[0].click()
+
+    } catch (e) {
+
     }
 }
-
 /**
-* 对XHR的二次全局封装,方便后期扩展
-* @param {*} method
-* @param {*} url
-* @param {*} headers
-* @param {*} data
-* @param {*} onSuccess
-*/
-function requestAPI(method, url, { headers, data, onSuccess }) {
-    return new Promise((resolve, reject) => {
-        GM_xmlhttpRequest({
-            method: method,
-            url: url,
-            headers: headers,
-            data: data,
-            timeout: setting.请求超时,
-            onload: function (xhr) {
-                switch (xhr.status) {
-                    case 200:
-                        // let obj = $.parseJSON(xhr.responseText) || {};
-                        if (onSuccess)
-                            onSuccess(xhr)
-                        else
-                            resolve(xhr)
-                        break;
-                    default:
-                        alert(xhr)
-                        console.log(xhr);
-                        break;
-                }
-            },
-            ontimeout: function () {
-                alert("响应超时")
-            }
-        });
-    })
+ * 搜索答案
+ * @param {*} i
+ */
+async function searchAnswer(i) {
+    // 往前查找同辈元素
+    const question = $($(".qBtn")[i]).prevAll(".e-q-q").text().trim();
 
+    showAnswerListDiv("搜索中...", [], i)
+    /**
+      * 快速接口 
+      * @param questionTitle 问题 
+      * @param id 对应 div id(用于定位答题)
+      */
+    try {
+        await quickSearch(question, i)
+    } catch (e) {
+        reRender = true
+        showAnswerListDiv("搜索失败...", [{ options: "<center><b>作者删库跑路了</b></center>" }], i)
+    }
 }
